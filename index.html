@@ -132,7 +132,7 @@ button{font:inherit;color:inherit}
 /* ---------- panels over the scene ---------- */
 .overlay{position:fixed;inset:0;z-index:20;background:rgba(6,10,8,.72);display:none;align-items:center;justify-content:center;padding:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .overlay.on{display:flex}
-.panel{background:var(--parchment);color:var(--paper-ink);border-radius:14px;border:2px solid var(--parchment-2);width:100%;max-width:560px;max-height:min(90dvh,900px);overflow:auto;padding:22px 24px;display:grid;gap:14px;box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative}
+.panel{background:var(--parchment);color:var(--paper-ink);border-radius:14px;border:2px solid var(--parchment-2);width:100%;max-width:560px;max-height:min(94dvh,900px);overflow:auto;padding:18px 22px;display:grid;gap:12px;box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative}
 .panel.wide{max-width:980px}
 @media (max-width:640px){
   .panel{padding:14px;gap:10px;max-height:calc(100dvh - 20px)}
@@ -170,10 +170,10 @@ button{font:inherit;color:inherit}
 
 /* locks */
 .locks{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px}
-.lock{background:#fff8e6;border-radius:12px;padding:14px;display:grid;grid-template-columns:40px 1fr;gap:8px 12px;align-items:start;border:2px solid var(--parchment-2);min-width:0}
+.lock{background:#fff8e6;border-radius:12px;padding:12px;display:grid;grid-template-columns:36px 1fr;gap:6px 10px;align-items:start;border:2px solid var(--parchment-2);min-width:0}
 .lock .ico{width:40px;height:40px;border-radius:50%;background:var(--parchment-2);display:grid;place-items:center;color:var(--gold-2);grid-row:1/span 2}
 .lock .ico svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.lock p{font-size:14.5px;line-height:1.4}
+.lock p{font-size:14px;line-height:1.35}
 .lock .in{display:flex;gap:8px;min-width:0}
 .lock input{font-size:15px;padding:8px 10px}
 .lock .try{padding:8px 12px;border-radius:9px;border:1px solid var(--gold-2);background:var(--gold);color:#2a1c05;font-family:var(--display);font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap}
@@ -183,6 +183,9 @@ button{font:inherit;color:inherit}
 .lock.open .try{display:none}
 .lock.wrong input{border-color:var(--rose);animation:shake .3s}
 @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.lock .pick{grid-column:2;display:flex;flex-wrap:wrap;gap:6px}
+.lock .pick .word{cursor:pointer;font:inherit;font-weight:700;font-size:13px;padding:4px 10px}
+.lock .pick .word:hover{background:var(--parchment-2)}
 .lock .msg{grid-column:2;font-size:13.5px;color:var(--paper-muted);min-height:1.2em}
 .lock.open .msg{color:#3f6a2a;font-weight:700}
 .done-msg{background:#eaf0dc;border:2px solid var(--moss);border-radius:12px;padding:14px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
@@ -345,9 +348,7 @@ button{font:inherit;color:inherit}
   <button type="button" class="x" data-close aria-label="Zavřít">×</button>
   <div class="kicker">Brána hradu</div>
   <h3 id="locksTitle">Šest zámků, šest klíčových slov</h3>
-  <p class="muted">Každý zámek popisuje jedno z klíčových slov z lesa. Napište ho k zámku a otočte klíčem. Na pořadí nezáleží, velikost písmen ani háčky nerozhodují.</p>
-  <div class="words" id="kwWords"></div>
-  <datalist id="kwList"></datalist>
+  <p class="muted">Každý zámek popisuje jedno z klíčových slov z lesa. Klepněte na správné slovo pod zámkem, nebo ho napište a otočte klíčem. Na pořadí nezáleží.</p>
   <div class="lock-nav">
     <button type="button" class="btn ghost" id="lockPrev" aria-label="Předchozí zámek"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button>
     <span class="pos" id="lockPos">Zámek 1 / 6</span>
@@ -527,7 +528,8 @@ LOCKS.forEach((l,i)=>{
   const el=document.createElement('div');
   el.className='lock'; el.id='lock-'+i;
   el.innerHTML=`<div class="ico">${lockIco}</div><p>${esc(l.clue)}</p>
-    <form class="in"><label class="sr" for="lock-in-${i}">Klíčové slovo k zámku ${i+1}</label><input id="lock-in-${i}" type="text" list="kwList" autocomplete="off" placeholder="Zámek ${i+1}"><button type="submit" class="try">Odemknout</button></form>
+    <form class="in"><label class="sr" for="lock-in-${i}">Klíčové slovo k zámku ${i+1}</label><input id="lock-in-${i}" type="text" autocomplete="off" placeholder="Zámek ${i+1}"><button type="submit" class="try">Odemknout</button></form>
+    <div class="pick" aria-label="Vaše klíčová slova"></div>
     <div class="msg" aria-live="polite"></div>`;
   $('locks').appendChild(el);
   const inp=el.querySelector('input'), msg=el.querySelector('.msg');
@@ -540,6 +542,7 @@ LOCKS.forEach((l,i)=>{
     else { void el.offsetWidth; el.classList.add('wrong'); msg.textContent='Tenhle klíč sem nepasuje. Zkuste jiné slovo.'; }
   });
   inp.addEventListener('input',()=>{ el.classList.remove('wrong'); if(!el.classList.contains('open')) msg.textContent=''; });
+  el.querySelector('.pick').addEventListener('click',e=>{ const b=e.target.closest('[data-w]'); if(!b) return; inp.value=b.dataset.w; el.querySelector('form').requestSubmit(); });
   const d=document.createElement('button'); d.type='button'; d.className='dot'; d.setAttribute('aria-label','Zámek '+(i+1)); d.addEventListener('click',()=>showLock(i)); $('lockDots').appendChild(d);
 });
 // phone stepper: which lock card is visible (all are shown on wide screens via CSS)
@@ -569,10 +572,16 @@ function refresh(){
   TASKS.forEach(t=>{ const ok=taskOk(t); $('pawn-'+t.id).classList.toggle('done',ok); $('chip-'+t.id).classList.toggle('done',ok); });
   // gate
   const words=TASKS.map(t=>taskOk(t)?kwOf(t):'');
-  $('kwWords').innerHTML=words.map((w,i)=>`<span class="word${w?'':' empty'}">${w?esc(w):'slovo '+(i+1)}</span>`).join('');
-  $('kwList').innerHTML=words.filter(Boolean).map(w=>`<option value="${esc(w)}"></option>`).join('');
+  // words already used to open a lock disappear from the other locks' pickers
+  const used=new Set(LOCKS.map((_,i)=>lockOpen(i)?norm(state.locks[i]):null).filter(Boolean));
+  const free=words.filter(w=>w && !used.has(norm(w)));
   let open=0;
-  LOCKS.forEach((l,i)=>{ const el=$('lock-'+i), ok=lockOpen(i); if(ok) open++; el.classList.toggle('open',ok); el.querySelector('.ico').innerHTML=ok?openIco:lockIco; if(ok) el.querySelector('.msg').textContent='Zámek '+(i+1)+' je odemčený.'; });
+  LOCKS.forEach((l,i)=>{
+    const el=$('lock-'+i), ok=lockOpen(i); if(ok) open++;
+    el.classList.toggle('open',ok); el.querySelector('.ico').innerHTML=ok?openIco:lockIco;
+    if(ok) el.querySelector('.msg').textContent='Zámek '+(i+1)+' je odemčený.';
+    el.querySelector('.pick').innerHTML=ok?'':free.map(w=>`<button type="button" class="word" data-w="${esc(w)}">${esc(w)}</button>`).join('');
+  });
   $('lockCount').textContent=`${open} / ${LOCKS.length} zámků`;
   showLock(lockIdx);
   $('gateDone').hidden=!viewDone('zamky'); $('hotLocks').classList.toggle('done',viewDone('zamky'));
