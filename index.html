@@ -160,6 +160,7 @@ button{font:inherit;color:inherit}
 .field input,.lock input,.riddle input{flex:1;min-width:0;padding:10px 12px;border-radius:9px;border:1px solid #c9b584;background:#fff8e6;color:var(--paper-ink);font:inherit;font-size:16px}
 .field input::placeholder,.lock input::placeholder,.riddle input::placeholder{color:#a08d64}
 .field input.ok{border-color:var(--moss);background:#f4f8ea}
+.field.wrong input{border-color:var(--rose);animation:shake .3s}
 .pcheck{width:26px;height:26px;border-radius:50%;border:1px solid #c9b584;display:grid;place-items:center;flex:0 0 auto;color:transparent}
 .pcheck.ok{background:var(--moss);border-color:var(--moss);color:#0f1a12}
 .pcheck svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
@@ -336,6 +337,7 @@ button{font:inherit;color:inherit}
     <label class="field"><span class="sr">Klíčové slovo</span><input id="taskKw" type="text" autocomplete="off" autocapitalize="characters" placeholder="Zapište klíčové slovo"><span class="pcheck" id="taskCheck"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span></label>
     <button type="button" class="btn" id="taskSave">Uložit a zavřít</button>
   </div>
+  <p class="muted" id="taskMsg" aria-live="polite"></p>
 </div></div>
 
 <!-- locks panel -->
@@ -385,12 +387,12 @@ button{font:inherit;color:inherit}
 const VIEWS=['uvod','pribeh','les','brana','zamky','nadvori','kviz','sin','truhla'];
 // Tasks in path order along the board (start pawn → castle). Hotspot positions are % of the board image.
 const TASKS = [
-  {id:'pfg1sj9da26', n:1, title:'Recept na šťastné manželství', who:'oba',   kind:'Roztřiďte ingredience: do polévky šťastného manželství, nebo do koše.', pawn:'coral', x:26.0, y:82.6},
-  {id:'pjro3yr4c26', n:2, title:'Slovník manželky',             who:'filip', kind:'Přelož deset výroků manželky do řeči obyčejných smrtelníků.',          pawn:'green', x:35.3, y:71.7},
-  {id:'pqff5rwk526', n:3, title:'Slovník manžela',              who:'barca', kind:'Přelož deset výroků manžela do řeči obyčejných smrtelníků.',           pawn:'pink',  x:55.0, y:73.6},
-  {id:'pdc39j1jk26', n:4, title:'Manželství v praxi',           who:'filip', kind:'Devět situací ze společného života, vyber nejlepší reakci.',          pawn:'navy',  x:60.5, y:63.1},
-  {id:'pz27t7ee326', n:5, title:'Manželství v praxi',           who:'barca', kind:'Devět situací ze společného života, vyber nejlepší reakci.',          pawn:'teal',  x:61.7, y:50.0},
-  {id:'pf9pocd5a26', n:6, title:'Manželské přešlapy',           who:'oba',   kind:'Pexeso: ke každému manželskému přešlapu najděte jeho řešení.',        pawn:'blue',  x:51.6, y:45.1},
+  {id:'pfg1sj9da26', n:1, title:'Recept na šťastné manželství', who:'oba',   kind:'Roztřiďte ingredience: do polévky šťastného manželství, nebo do koše.', pawn:'coral', x:26.0, y:82.6, h:'84913220-e684e7e'},
+  {id:'pjro3yr4c26', n:2, title:'Slovník manželky',             who:'filip', kind:'Přelož deset výroků manželky do řeči obyčejných smrtelníků.',          pawn:'green', x:35.3, y:71.7, h:'36b2c7ec-ba846a6'},
+  {id:'pqff5rwk526', n:3, title:'Slovník manžela',              who:'barca', kind:'Přelož deset výroků manžela do řeči obyčejných smrtelníků.',           pawn:'pink',  x:55.0, y:73.6, h:'f9aa880c-ca7f0dd6'},
+  {id:'pdc39j1jk26', n:4, title:'Manželství v praxi',           who:'filip', kind:'Devět situací ze společného života, vyber nejlepší reakci.',          pawn:'navy',  x:60.5, y:63.1, h:'e6c65d66-8cb8534c'},
+  {id:'pz27t7ee326', n:5, title:'Manželství v praxi',           who:'barca', kind:'Devět situací ze společného života, vyber nejlepší reakci.',          pawn:'teal',  x:61.7, y:50.0, h:'3f27db23-4e86eaf7'},
+  {id:'pf9pocd5a26', n:6, title:'Manželské přešlapy',           who:'oba',   kind:'Pexeso: ke každému manželskému přešlapu najděte jeho řešení.',        pawn:'blue',  x:51.6, y:45.1, h:'a904dc41-44e5e5b1'},
 ];
 const WHO = {oba:'Pro oba', filip:'Jen pro Filipa', barca:'Jen pro Barču'};
 // Six locks of the castle gate (clue → one of the six keywords); answers are stored as hashes.
@@ -404,7 +406,7 @@ const LOCKS = [
 ];
 const RIDDLE_H='f9afb50-61972d5c';
 const laUrl = id => `https://learningapps.org/watch?v=${id}`;
-function norm(s){return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
+function norm(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'');}
 function hash(s){s=norm(s);let a=5381,b=52711;for(const c of s){const k=c.codePointAt(0);a=(a*33+k)>>>0;b=(b*31+k)>>>0;}return a.toString(16)+'-'+b.toString(16);}
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 const $=id=>document.getElementById(id);
@@ -418,11 +420,12 @@ function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e
 
 // ---------- progress ----------
 function kwOf(t){ return (state.kw[t.id]||'').trim(); }
+function taskOk(t){ const v=kwOf(t); return !!v && hash(v)===t.h; }
 function lockOpen(i){ const v=state.locks[i]; return !!v && hash(v)===LOCKS[i].h; }
 function viewDone(v){
   switch(v){
     case 'uvod': case 'pribeh': case 'brana': case 'nadvori': case 'sin': return true;
-    case 'les': return TASKS.every(t=>kwOf(t).length>0);
+    case 'les': return TASKS.every(taskOk);
     case 'zamky': return LOCKS.every((_,i)=>lockOpen(i));
     case 'kviz': return !!state.done.kviz;
     case 'truhla': return !!state.riddle && hash(state.riddle)===RIDDLE_H;
@@ -430,7 +433,7 @@ function viewDone(v){
 }
 // what blocks "Dále" on a view (soft lock), null when free to go
 function blocker(v){
-  if(v==='les'){ const m=TASKS.filter(t=>!kwOf(t)).length; return m? `Chybí vám ještě ${m} ${m===1?'klíčové slovo':m<5?'klíčová slova':'klíčových slov'} z lesa.`:null; }
+  if(v==='les'){ const m=TASKS.filter(t=>!taskOk(t)).length; return m? `Chybí vám ještě ${m} ${m===1?'správné klíčové slovo':m<5?'správná klíčová slova':'správných klíčových slov'} z lesa.`:null; }
   if(v==='zamky'){ const m=LOCKS.filter((_,i)=>!lockOpen(i)).length; return m? `Brána je ještě zamčená: ${m} ${m===1?'zámek':m<5?'zámky':'zámků'} čeká na klíčové slovo.`:null; }
   if(v==='kviz') return state.done.kviz? null : 'Nejdřív spolu dokončete novomanželský kvíz a označte ho jako hotový.';
   return null;
@@ -507,10 +510,15 @@ function openTask(t){
   paintTask();
   setTimeout(()=>$('taskKw').focus(),30);
 }
-function paintTask(){ const ok=$('taskKw').value.trim().length>0; $('taskCheck').classList.toggle('ok',ok); $('taskKw').classList.toggle('ok',ok); }
+function paintTask(){ const v=$('taskKw').value.trim(), ok=!!v && hash(v)===curTask.h; $('taskCheck').classList.toggle('ok',ok); $('taskKw').classList.toggle('ok',ok); $('taskMsg').textContent=ok?'Správně! Klíčové slovo sedí.':''; return ok; }
 $('taskKw').addEventListener('input',()=>{ state.kw[curTask.id]=$('taskKw').value; save(); paintTask(); refresh(); });
 $('taskKw').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); $('taskSave').click(); } });
-$('taskSave').addEventListener('click',()=>{ state.kw[curTask.id]=$('taskKw').value; save(); closeOverlays(); refresh(); });
+$('taskSave').addEventListener('click',()=>{
+  state.kw[curTask.id]=$('taskKw').value; save(); refresh();
+  if(paintTask()){ closeOverlays(); return; }
+  const f=$('taskKw').closest('.field'); f.classList.remove('wrong'); void f.offsetWidth; f.classList.add('wrong');
+  $('taskMsg').textContent=$('taskKw').value.trim()?'Tohle není správné klíčové slovo. Zkontrolujte, co vám úkol ukázal po splnění.':'Napište klíčové slovo, které vám úkol ukázal po splnění.';
+});
 
 // ---------- gate locks ----------
 const lockIco='<svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
@@ -556,11 +564,11 @@ $('hintBtn').addEventListener('click',()=>{ $('riddleHint').textContent='Nápov�
 // ---------- paint everything from state ----------
 function refresh(){
   // forest
-  const n=TASKS.filter(t=>kwOf(t)).length;
+  const n=TASKS.filter(taskOk).length;
   $('kwCount').textContent=`${n} / ${TASKS.length} klíčových slov`;
-  TASKS.forEach(t=>{ const ok=!!kwOf(t); $('pawn-'+t.id).classList.toggle('done',ok); $('chip-'+t.id).classList.toggle('done',ok); });
+  TASKS.forEach(t=>{ const ok=taskOk(t); $('pawn-'+t.id).classList.toggle('done',ok); $('chip-'+t.id).classList.toggle('done',ok); });
   // gate
-  const words=TASKS.map(kwOf);
+  const words=TASKS.map(t=>taskOk(t)?kwOf(t):'');
   $('kwWords').innerHTML=words.map((w,i)=>`<span class="word${w?'':' empty'}">${w?esc(w):'slovo '+(i+1)}</span>`).join('');
   $('kwList').innerHTML=words.filter(Boolean).map(w=>`<option value="${esc(w)}"></option>`).join('');
   let open=0;
