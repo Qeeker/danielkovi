@@ -348,7 +348,7 @@ button{font:inherit;color:inherit}
   <button type="button" class="x" data-close aria-label="Zavřít">×</button>
   <div class="kicker">Brána hradu</div>
   <h3 id="locksTitle">Šest zámků, šest klíčových slov</h3>
-  <p class="muted">Každý zámek popisuje jedno z klíčových slov z lesa. Klepněte na správné slovo pod zámkem, nebo ho napište a otočte klíčem. Na pořadí nezáleží.</p>
+  <p class="muted">Každý zámek popisuje jedno z klíčových slov z lesa. Vyberte slovo pod zámkem, nebo ho napište, a pak otočte klíčem tlačítkem Odemknout. Na pořadí nezáleží.</p>
   <div class="lock-nav">
     <button type="button" class="btn ghost" id="lockPrev" aria-label="Předchozí zámek"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button>
     <span class="pos" id="lockPos">Zámek 1 / 6</span>
@@ -542,7 +542,7 @@ LOCKS.forEach((l,i)=>{
     else { void el.offsetWidth; el.classList.add('wrong'); msg.textContent='Tenhle klíč sem nepasuje. Zkuste jiné slovo.'; }
   });
   inp.addEventListener('input',()=>{ el.classList.remove('wrong'); if(!el.classList.contains('open')) msg.textContent=''; });
-  el.querySelector('.pick').addEventListener('click',e=>{ const b=e.target.closest('[data-w]'); if(!b) return; inp.value=b.dataset.w; el.querySelector('form').requestSubmit(); });
+  el.querySelector('.pick').addEventListener('click',e=>{ const b=e.target.closest('[data-w]'); if(!b) return; inp.value=b.dataset.w; el.classList.remove('wrong'); msg.textContent=''; el.querySelector('.try').focus(); });
   const d=document.createElement('button'); d.type='button'; d.className='dot'; d.setAttribute('aria-label','Zámek '+(i+1)); d.addEventListener('click',()=>showLock(i)); $('lockDots').appendChild(d);
 });
 // phone stepper: which lock card is visible (all are shown on wide screens via CSS)
