@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Svatební hra pro Barču a Filipa: cesta kouzelným lesem k hradu a k pokladu.">
+<meta name="robots" content="noindex">
+<style>html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Poklad Danielkových</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&display=swap">
+<style>
+/* Layout: a deck of nine screens, one scene per screen fitted to the viewport, no page scroll.
+   Chapter bar on top, Zpět/Dále on the bottom; tasks, locks and the riddle open as parchment panels over the scene.
+   Single committed look (night forest + parchment). */
+:root{
+  --ink:#141d17;        /* page ground, deep forest night */
+  --ink-2:#1d2a21;      /* raised panels */
+  --ink-3:#273a2d;      /* borders on panels */
+  --fg:#efe6d0;         /* text on ink */
+  --muted:#b5aa8f;
+  --parchment:#f2e4c3;  /* scroll paper */
+  --parchment-2:#e3cf9f;
+  --paper-ink:#3a2a15;  /* text on parchment */
+  --paper-muted:#7a6340;
+  --gold:#d9b35b;       /* accent: brass keys, locks */
+  --gold-2:#9c7a2a;
+  --moss:#6f9550;       /* done state */
+  --rose:#c9627a;
+  --display:"Cinzel", "Times New Roman", Georgia, serif;
+  --body:"Alegreya", Georgia, "Times New Roman", serif;
+  --bar-h:0px; --nav-h:0px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;background:var(--ink);color:var(--fg)}
+body{font-family:var(--body);font-size:17px;line-height:1.5;margin:0;overflow:hidden;display:grid;grid-template-rows:1fr}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--ink)}
+img{max-width:100%;display:block}
+a{color:var(--gold)}
+h1,h2,h3{font-family:var(--display);font-weight:700;line-height:1.15;text-wrap:balance;margin:0}
+p{margin:0}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.gutter{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* ---------- stage & views ---------- */
+.stage{min-height:0;position:relative;overflow:hidden}
+.view{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;gap:12px;padding-block:14px calc(14px + env(safe-area-inset-bottom,0px));overflow:auto}
+.btn.locked{opacity:.45;filter:none}
+.back{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:14px;padding:6px 8px}
+.view.on{display:flex}
+.view-head{text-align:center;max-width:70ch}
+.kicker{font-family:var(--display);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+.view-head h2{font-size:clamp(19px,2.4vw,26px);margin-top:4px}
+/* width follows the free height so a 16:9 scene always fits without page scroll */
+.scene{position:relative;width:min(100%,calc((100dvh - 225px) * 1.7917));border-radius:12px;overflow:hidden;background:var(--ink-2);box-shadow:0 20px 60px rgba(0,0,0,.5);border:1px solid var(--ink-3);container-type:inline-size;flex:0 0 auto}
+.scene img.bg{width:100%;height:auto;aspect-ratio:1376/768}
+.view.story .scene{width:min(100%,calc((100dvh - 175px) * 1.7917))}
+.hero .scene{width:min(100%,calc((100dvh - 200px) * 1.7917))}
+.below{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;max-width:100%;min-width:0}
+
+/* speech: a parchment drawn in CSS. On wide screens it sits over (and fully covers) the owl's painted scroll;
+   on narrow screens it is a card under the picture. In both cases JS fits the type size to the box. */
+/* the vine-framed scroll from the original site, as a nine-slice border so the flourishes never distort */
+.speech{position:relative;color:var(--paper-ink);border-style:solid;border-width:40px 46px 34px 48px;border-image:url(img/scroll.png) 95 110 80 110 fill stretch;background:none;padding:0 2px;font-size:16px;line-height:1.4;width:100%;max-width:680px;flex:1 1 auto;min-height:0;overflow:hidden;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
+.speech p + p{margin-top:.55em}
+.speech strong{color:#2a1a08}
+.speech .tip{font-size:.88em;color:var(--paper-muted);font-style:italic;border-top:1px dashed #c5a76a;padding-top:.45em;margin-top:.6em}
+@media (max-width:899px){
+  /* picture on top, parchment card filling the rest of the screen underneath it */
+  .view.story .scene{width:100%;max-width:640px;display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
+  .view.story .scene img.bg{flex:0 0 auto;width:100%;max-height:38dvh;object-fit:cover;object-position:var(--focus,50% 50%)}
+  .speech{max-width:none;margin:6px 0 4px;filter:none}
+}
+@media (min-width:900px){
+  .speech{position:absolute;margin:0;max-width:none;width:auto;height:auto;flex:none;border-width:6.4cqw 7.4cqw 5.4cqw 7.6cqw;padding:0 .3em;font-weight:700;line-height:1.3;z-index:1}
+  .pos-intro{left:52%;top:17%;width:37%;min-height:43%;max-height:76%}
+  .pos-gate{left:50%;top:6%;width:39%;min-height:44%;max-height:54%}
+  .pos-court{left:11%;top:1.5%;width:41%;min-height:43%;max-height:54%}
+  .pos-hall{left:51%;top:7%;width:38%;min-height:44%;max-height:54%}
+}
+.hero-text{text-align:center;max-width:62ch}
+.hero-text h1{font-size:clamp(24px,3.6vw,40px);color:var(--gold);letter-spacing:.02em}
+.hero-text p{color:var(--muted);margin-top:6px}
+
+/* pawns & hotspots */
+.pawn{position:absolute;transform:translate(-50%,-100%);width:clamp(26px,4.4%,60px);background:none;border:0;padding:0;cursor:pointer;filter:drop-shadow(0 6px 6px rgba(0,0,0,.6))}
+.pawn::after{content:"";position:absolute;left:50%;bottom:-6%;width:150%;height:28%;transform:translateX(-50%);border-radius:50%;border:2px solid var(--gold);opacity:.9;animation:pulse 2.2s ease-out infinite}
+.pawn img{width:100%;height:auto;aspect-ratio:1112/1974;transition:transform .2s}
+.pawn:hover img,.pawn:focus-visible img{transform:translateY(-6%) scale(1.06)}
+.pawn .n{position:absolute;left:50%;top:-20px;transform:translateX(-50%);min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--parchment);color:var(--paper-ink);font-family:var(--display);font-weight:700;font-size:13px;display:grid;place-items:center;line-height:1;border:1px solid var(--gold-2)}
+.pawn.done::after{border-color:var(--moss);animation:none}
+.pawn.done .n{background:var(--moss);color:#0f1a12;border-color:var(--moss)}
+@keyframes pulse{0%{transform:translateX(-50%) scale(.7);opacity:.9}100%{transform:translateX(-50%) scale(1.6);opacity:0}}
+.hot{position:absolute;transform:translate(-50%,-50%);width:clamp(44px,8%,90px);aspect-ratio:1;border-radius:50%;border:0;background:radial-gradient(circle,rgba(217,179,91,.35),rgba(217,179,91,0) 70%);cursor:pointer;display:grid;place-items:center;padding:0}
+.hot::after{content:"";position:absolute;inset:18%;border-radius:50%;border:2px solid var(--gold);animation:ring 2.2s ease-out infinite}
+.hot img{width:60%;height:auto;filter:drop-shadow(0 4px 6px rgba(0,0,0,.7))}
+.hot.done::after{border-color:var(--moss);animation:none}
+@keyframes ring{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.5);opacity:0}}
+@media (prefers-reduced-motion:reduce){.pawn::after,.hot::after{animation:none}}
+
+/* chips under the board */
+.chip{display:inline-flex;align-items:center;gap:7px;padding:6px 11px 6px 7px;border-radius:999px;border:1px solid var(--ink-3);background:var(--ink-2);color:var(--muted);font-size:14px;cursor:pointer;line-height:1.2}
+.chip b{font-family:var(--display);font-size:12px;width:20px;height:20px;border-radius:50%;display:inline-grid;place-items:center;border:1px solid var(--muted);color:var(--fg)}
+.chip.done{color:var(--fg);border-color:color-mix(in srgb,var(--moss) 60%,var(--ink-3))}
+.chip.done b{background:var(--moss);border-color:var(--moss);color:#0f1a12}
+.count{font-family:var(--display);font-weight:700;font-size:14px;color:var(--gold);letter-spacing:.04em;white-space:nowrap}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:9px;border:1px solid var(--gold-2);background:linear-gradient(180deg,#e7c66f,var(--gold));color:#2a1c05;font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.03em;text-decoration:none;cursor:pointer;white-space:nowrap}
+.btn:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent;color:var(--gold);border-color:var(--gold-2)}
+.btn.big{font-size:16px;padding:12px 20px}
+.btn:disabled{opacity:.45;cursor:default;filter:none}
+.btn svg,.done-toggle svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.done-toggle{display:inline-flex;align-items:center;gap:9px;padding:9px 13px;border-radius:9px;border:1px solid var(--ink-3);background:transparent;cursor:pointer;font-size:15px;color:var(--muted)}
+.check{width:22px;height:22px;border-radius:50%;border:1px solid var(--ink-3);display:grid;place-items:center;flex:0 0 auto;color:transparent}
+.check svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.done-toggle.on{color:var(--fg);border-color:var(--moss)}
+.done-toggle.on .check{background:var(--moss);border-color:var(--moss);color:#0f1a12}
+
+/* ---------- bottom navigation ---------- */
+.dots{display:flex;gap:6px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ink-3);border:0;padding:0;cursor:pointer}
+.dot.cur{background:var(--gold);transform:scale(1.3)}
+.dot.done{background:var(--moss)}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--parchment);color:var(--paper-ink);border-radius:10px;padding:12px 16px;display:none;gap:12px;align-items:center;flex-wrap:wrap;max-width:min(92vw,560px);box-shadow:0 10px 30px rgba(0,0,0,.5);z-index:15;font-size:15px}
+.toast.on{display:flex}
+
+/* ---------- panels over the scene ---------- */
+.overlay{position:fixed;inset:0;z-index:20;background:rgba(6,10,8,.72);display:none;align-items:center;justify-content:center;padding:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.overlay.on{display:flex}
+.panel{background:var(--parchment);color:var(--paper-ink);border-radius:14px;border:2px solid var(--parchment-2);width:100%;max-width:560px;max-height:min(90dvh,900px);overflow:auto;padding:22px 24px;display:grid;gap:14px;box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative}
+.panel.wide{max-width:980px}
+@media (max-width:640px){
+  .panel{padding:14px;gap:10px;max-height:calc(100dvh - 20px)}
+  .panel h3{font-size:18px}.panel p,.panel .muted{font-size:14px}
+  .locks{gap:8px}.lock{padding:10px;gap:4px 10px;grid-template-columns:32px 1fr}.lock .ico{width:32px;height:32px}.lock .ico svg{width:16px;height:16px}
+  .lock p{font-size:14px;line-height:1.35}.lock .msg{font-size:12px;min-height:0}
+  /* one lock at a time on phones */
+  .locks{grid-template-columns:1fr}.locks .lock{display:none}.locks .lock.show{display:grid}
+  .lock-nav{display:flex!important}
+}
+.lock-nav{display:none;align-items:center;justify-content:space-between;gap:10px}
+.lock-nav .pos{font-family:var(--display);font-weight:700;font-size:13px;color:var(--gold-2);letter-spacing:.06em}
+.lock-nav .dots{display:flex;gap:5px;align-items:center}.lock-nav .dot{width:8px;height:8px;border-radius:50%;border:0;padding:0;cursor:pointer;background:#d9c69a}.lock-nav .dot.cur{background:var(--gold-2)}.lock-nav .dot.done{background:var(--moss)}
+.panel .x{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;border:1px solid var(--parchment-2);background:#fff8e6;cursor:pointer;display:grid;place-items:center;font-size:20px;line-height:1;color:var(--paper-muted)}
+.panel h3{font-size:20px;color:#2a1a08;padding-right:36px}
+.panel .kicker{color:var(--gold-2)}
+.panel p{font-size:16px}
+.panel .muted{color:var(--paper-muted);font-size:14.5px}
+.who{display:inline-block;padding:2px 8px;border-radius:999px;font-family:var(--display);font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-right:6px;border:1px solid}
+.who-oba{color:var(--gold-2);border-color:var(--gold-2)}
+.who-filip{color:#3f6a9c;border-color:#3f6a9c}
+.who-barca{color:#a94a66;border-color:#a94a66}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;min-width:0}
+.field{display:flex;gap:8px;align-items:center;flex:1 1 220px;min-width:0}
+.field input,.lock input,.riddle input{flex:1;min-width:0;padding:10px 12px;border-radius:9px;border:1px solid #c9b584;background:#fff8e6;color:var(--paper-ink);font:inherit;font-size:16px}
+.field input::placeholder,.lock input::placeholder,.riddle input::placeholder{color:#a08d64}
+.field input.ok{border-color:var(--moss);background:#f4f8ea}
+.pcheck{width:26px;height:26px;border-radius:50%;border:1px solid #c9b584;display:grid;place-items:center;flex:0 0 auto;color:transparent}
+.pcheck.ok{background:var(--moss);border-color:var(--moss);color:#0f1a12}
+.pcheck svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.words{display:flex;flex-wrap:wrap;gap:8px}
+.word{padding:4px 10px;border-radius:999px;background:#fff8e6;border:1px solid #c9b584;color:var(--paper-ink);font-weight:700;font-size:14px}
+.word.empty{background:transparent;border-style:dashed;color:var(--paper-muted);font-weight:400}
+
+/* locks */
+.locks{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px}
+.lock{background:#fff8e6;border-radius:12px;padding:14px;display:grid;grid-template-columns:40px 1fr;gap:8px 12px;align-items:start;border:2px solid var(--parchment-2);min-width:0}
+.lock .ico{width:40px;height:40px;border-radius:50%;background:var(--parchment-2);display:grid;place-items:center;color:var(--gold-2);grid-row:1/span 2}
+.lock .ico svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.lock p{font-size:14.5px;line-height:1.4}
+.lock .in{display:flex;gap:8px;min-width:0}
+.lock input{font-size:15px;padding:8px 10px}
+.lock .try{padding:8px 12px;border-radius:9px;border:1px solid var(--gold-2);background:var(--gold);color:#2a1c05;font-family:var(--display);font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap}
+.lock.open{border-color:var(--moss);background:#eaf0dc}
+.lock.open .ico{background:var(--moss);color:#0f1a12}
+.lock.open input{border-color:var(--moss);background:#f4f8ea}
+.lock.open .try{display:none}
+.lock.wrong input{border-color:var(--rose);animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.lock .msg{grid-column:2;font-size:13.5px;color:var(--paper-muted);min-height:1.2em}
+.lock.open .msg{color:#3f6a2a;font-weight:700}
+.done-msg{background:#eaf0dc;border:2px solid var(--moss);border-radius:12px;padding:14px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.done-msg img{width:40px;height:auto}
+.done-msg p{flex:1 1 240px;min-width:0}
+
+/* riddle */
+.riddle{display:grid;gap:12px}
+.riddle .text{font-size:17px;line-height:1.5}
+.riddle .q{font-family:var(--display);font-weight:700;font-size:20px;color:#2a1a08}
+.riddle .in{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.riddle input{flex:1 1 180px;font-size:18px;text-transform:uppercase;letter-spacing:.08em}
+.riddle input::placeholder{text-transform:none;letter-spacing:0}
+.riddle .hint{font-size:14.5px;color:var(--paper-muted)}
+.riddle .hint button{background:none;border:0;padding:0;text-decoration:underline;color:inherit;cursor:pointer;font:inherit}
+.riddle.wrong input{border-color:var(--rose);animation:shake .3s}
+.reveal{display:grid;gap:12px;justify-items:start}
+</style>
+
+<main class="stage">
+
+<!-- 1 cover -->
+<section class="view hero gutter" data-view="uvod" data-ch="1">
+  <div class="scene"><img class="bg" src="img/01-cover.jpg" alt="Barča a Filip Danielkovi v kouzelném lese, v dálce hrad" fetchpriority="high"></div>
+  <div class="hero-text">
+    <h1>Barča &amp; Filip Danielkovi</h1>
+    <p>Společná cesta za manželským pokladem</p>
+  </div>
+  <div class="below"><button type="button" class="btn big" data-next>Začít dobrodružství <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+</section>
+
+<!-- 2 intro -->
+<section class="view story gutter" data-view="pribeh" data-ch="1">
+  <div class="view-head"><div class="kicker">Kapitola 1</div><h2>Příprava na společnou cestu za manželským pokladem</h2></div>
+  <div class="scene" style="--focus:22% 55%">
+    <img class="bg" src="img/02-intro.jpg" alt="Sova s kouzelnou holí sedí na truhle před lesní bránou, v pozadí hrad">
+    <div class="speech pos-intro"><div class="in">
+      <p><strong>Milí novomanželé Danielkovi,</strong> přece jste si nemysleli, že svatební dar dostanete jen tak!</p>
+      <p>Kdepak! Každý pořádný poklad si zaslouží trochu úsilí. Čekají vás společné úkoly, které prověří vaše znalosti a schopnosti potřebné pro spokojené manželství. Jejich splněním se budete postupně přibližovat k vytoužené odměně.</p>
+      <p>Tak co, jste připraveni? Dobrodružství začíná v kouzelném lese, ze kterého se musíte dostat k hradu. Čeká vás herní plán se šesti úkoly. Z každého úkolu získáte jedno <strong>klíčové slovo</strong>. Zapište si ho rovnou sem, bude se vám později hodit!</p>
+      <p class="tip">Malá rada: nejpohodlněji se hraje na počítači. Postupujte krok po kroku a nic nepřeskakujte.</p>
+    </div></div>
+  </div>
+  <div class="below"><button type="button" class="back" data-back>‹ zpět</button><button type="button" class="btn big" data-next>Pokračovat <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+</section>
+
+<!-- 3 forest board -->
+<section class="view gutter" data-view="les" data-ch="2">
+  <div class="view-head"><div class="kicker">Kapitola 2</div><h2>Společná cesta za manželským pokladem</h2></div>
+  <div class="scene">
+    <img class="bg" src="img/03-board.jpg" alt="Herní plán: cesta lesem od startu k hradu se šesti figurkami">
+    <div id="pawns"></div>
+  </div>
+  <div class="below" id="chips"></div>
+  <div class="below"><button type="button" class="back" data-back>‹ zpět</button><button type="button" class="btn big" data-next>Pokračovat <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+</section>
+
+<!-- 4 gate story -->
+<section class="view story gutter" data-view="brana" data-ch="3">
+  <div class="view-head"><div class="kicker">Kapitola 3</div><h2>Brána hradu</h2></div>
+  <div class="scene">
+    <img class="bg" src="img/04-gate-owl.jpg" alt="Sova před zamčenou mříží hradní brány">
+    <div class="speech pos-gate"><div class="in">
+      <p><strong>Gratuluji!</strong> Úspěšně jste se dostali z kouzelného lesa ven a nacházíte se u brány hradu, která je ale zamčená. Naštěstí jste si z předchozích úkolů odnesli šest klíčových slov pro šťastné manželství, která vám teď přijdou vhod. Na dalším kroku najdete bránu a klíč, který vás zavede k šesti zámkům.</p>
+    </div></div>
+  </div>
+  <div class="below"><button type="button" class="back" data-back>‹ zpět</button><button type="button" class="btn big" data-next>Pokračovat <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+</section>
+
+<!-- 5 gate locks -->
+<section class="view gutter" data-view="zamky" data-ch="3">
+  <div class="view-head"><div class="kicker">Kapitola 3</div><h2>Šest zámků, šest klíčových slov</h2></div>
+  <div class="scene">
+    <img class="bg" src="img/05-gate.jpg" alt="Barča a Filip stojí před mříží hradní brány s visacím zámkem">
+    <button type="button" class="hot" id="hotLocks" style="left:51.8%;top:51.5%" data-open="locks" aria-label="Otevřít šest zámků brány"><img src="img/key.png" alt=""></button>
+  </div>
+  <div class="below">
+    <span class="count" id="lockCount">0 / 6 zámků</span>
+    <button type="button" class="btn" data-open="locks">Odemknout zámky <svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></button>
+  </div>
+  <div class="below"><button type="button" class="back" data-back>‹ zpět</button><button type="button" class="btn big" data-next>Pokračovat <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+</section>
+
+<!-- 6 courtyard story -->
+<section class="view story gutter" data-view="nadvori" data-ch="4">
+  <div class="view-head"><div class="kicker">Kapitola 4</div><h2>Nádvoří hradu</h2></div>
+  <div class="scene" style="--focus:62% 55%">
+    <img class="bg" src="img/06-courtyard-owl.jpg" alt="Sova na podstavci uprostřed hradního nádvoří před zamčenými dveřmi">
+    <div class="speech pos-court"><div class="in">
+      <p><strong>Gratuluji!</strong> Úspěšně jste se dostali na nádvoří hradu. Dveře do hradu jsou ale zamčené. Na dveřích visí kouzelný klíč, který vám odemkne novomanželský kvíz. U každé otázky se společně domluvte, kdo z vás dvou se k ní hodí víc. Pozor, tentokrát nejde o rychlost ani o správné odpovědi. Je to jen chvilka pro vás dva, abyste se pobavili, zavzpomínali a třeba se o sobě dozvěděli něco nového.</p>
+    </div></div>
+  </div>
+  <div class="below"><button type="button" class="back" data-back>‹ zpět</button><button type="button" class="btn big" data-next>Pokračovat <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+</section>
+
+<!-- 7 quiz -->
+<section class="view gutter" data-view="kviz" data-ch="4">
+  <div class="view-head"><div class="kicker">Kapitola 4</div><h2>Novomanželský kvíz: nevěsta, nebo ženich?</h2></div>
+  <div class="scene">
+    <img class="bg" src="img/07-courtyard.jpg" alt="Barča a Filip na nádvoří před zamčenými dveřmi hradu">
+    <a class="hot" id="hotQuiz" style="left:48.2%;top:52.6%" href="https://app.faabul.com/l/Cf7S8OQfOkNF7B?lang=cs" target="_blank" rel="noopener" aria-label="Spustit novomanželský kvíz" data-quiz><img src="img/key.png" alt=""></a>
+  </div>
+  <div class="below">
+    <a class="btn" href="https://app.faabul.com/l/Cf7S8OQfOkNF7B?lang=cs" target="_blank" rel="noopener" data-quiz>Spustit kvíz <svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+    <button type="button" class="done-toggle" data-done="kviz"><span class="check"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>Kvíz máme za sebou</button>
+  </div>
+  <div class="below"><button type="button" class="back" data-back>‹ zpět</button><button type="button" class="btn big" data-next>Pokračovat <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+</section>
+
+<!-- 8 hall story -->
+<section class="view story gutter" data-view="sin" data-ch="5">
+  <div class="view-head"><div class="kicker">Kapitola 5</div><h2>Truhla s mapou</h2></div>
+  <div class="scene">
+    <img class="bg" src="img/08-hall-owl.jpg" alt="Sova v hradní síni, kolem truhly a mapy">
+    <div class="speech pos-hall"><div class="in">
+      <p>Vyplněním novomanželského kvízu a shodnutím se na odpovědích jste odemkli dveře do hradu. Uvnitř hradu na vás čeká truhla, ve které se ukrývá mapa vedoucí k vašemu novomanželskému pokladu.</p>
+      <p>Doufám, že jste se při plnění úkolů pobavili, zamysleli se nad manželstvím a připomněli si, že největší síla spočívá v tom, když táhnete za jeden provaz. Tak vzhůru za pokladem! To nejcennější vás teprve čeká!</p>
+    </div></div>
+  </div>
+  <div class="below"><button type="button" class="back" data-back>‹ zpět</button><button type="button" class="btn big" data-next>Pokračovat <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+</section>
+
+<!-- 9 chest -->
+<section class="view gutter" data-view="truhla" data-ch="5">
+  <div class="view-head"><div class="kicker">Kapitola 5</div><h2>Poslední tajemství šťastného manželství</h2></div>
+  <div class="scene">
+    <img class="bg" src="img/09-hall.jpg" alt="Barča a Filip v hradní síni u zamčené truhly s mapou">
+    <button type="button" class="hot" id="hotChest" style="left:51.1%;top:58.5%;width:clamp(56px,10%,120px)" data-open="riddle" aria-label="Otevřít zámek truhly"><img src="img/lock-key.png" alt="" style="width:70%"></button>
+  </div>
+  <div class="below">
+    <button type="button" class="btn big" data-open="riddle" id="chestBtn">Otevřít truhlu</button>
+    <a class="btn big" id="mapBtn" href="https://canva.link/qnta2kwx0wdqrpl" target="_blank" rel="noopener" hidden>Otevřít mapu k pokladu <svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+  </div>
+  <div class="below"><button type="button" class="back" data-back>‹ zpět</button></div>
+</section>
+
+</main>
+
+<div class="toast" id="toast" role="status"></div>
+
+<!-- task panel -->
+<div class="overlay" id="ovTask"><div class="panel" role="dialog" aria-modal="true" aria-labelledby="taskTitle">
+  <button type="button" class="x" data-close aria-label="Zavřít">×</button>
+  <div class="kicker" id="taskKicker"></div>
+  <h3 id="taskTitle"></h3>
+  <p id="taskKind"></p>
+  <div class="row">
+    <a class="btn" id="taskOpen" href="#" target="_blank" rel="noopener">Otevřít úkol <svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+    <span class="muted" id="taskNote">Otevře se v novém okně. Klíčové slovo se ukáže po splnění úkolu.</span>
+  </div>
+  <div class="row">
+    <label class="field"><span class="sr">Klíčové slovo</span><input id="taskKw" type="text" autocomplete="off" autocapitalize="characters" placeholder="Zapište klíčové slovo"><span class="pcheck" id="taskCheck"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span></label>
+    <button type="button" class="btn" id="taskSave">Uložit a zavřít</button>
+  </div>
+</div></div>
+
+<!-- locks panel -->
+<div class="overlay" id="ovLocks"><div class="panel wide" role="dialog" aria-modal="true" aria-labelledby="locksTitle">
+  <button type="button" class="x" data-close aria-label="Zavřít">×</button>
+  <div class="kicker">Brána hradu</div>
+  <h3 id="locksTitle">Šest zámků, šest klíčových slov</h3>
+  <p class="muted">Každý zámek popisuje jedno z klíčových slov z lesa. Napište ho k zámku a otočte klíčem. Na pořadí nezáleží, velikost písmen ani háčky nerozhodují.</p>
+  <div class="words" id="kwWords"></div>
+  <datalist id="kwList"></datalist>
+  <div class="lock-nav">
+    <button type="button" class="btn ghost" id="lockPrev" aria-label="Předchozí zámek"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg></button>
+    <span class="pos" id="lockPos">Zámek 1 / 6</span>
+    <div class="dots" id="lockDots"></div>
+    <button type="button" class="btn ghost" id="lockNext" aria-label="Další zámek"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+  </div>
+  <div class="locks" id="locks"></div>
+  <div class="done-msg" id="gateDone" hidden>
+    <img src="img/lock-key.png" alt="">
+    <p><strong>Výborně! Všech šest zámků je odemčeno.</strong> Brána se otevírá a cesta na hradní nádvoří je volná.</p>
+    <button type="button" class="btn" data-go="nadvori" data-close>Na nádvoří <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+  </div>
+</div></div>
+
+<!-- riddle panel -->
+<div class="overlay" id="ovRiddle"><div class="panel" role="dialog" aria-modal="true" aria-labelledby="riddleTitle">
+  <button type="button" class="x" data-close aria-label="Zavřít">×</button>
+  <div class="kicker">Zámek truhly</div>
+  <h3 id="riddleTitle">Poslední tajemství šťastného manželství</h3>
+  <form class="riddle" id="riddle">
+    <p class="text">Mám zvláštní kouzelnou moc a v manželství bych rozhodně neměl chybět! Dokážu vykouzlit úsměv i v obyčejný den, zachránit situaci, když se něco nepovede, a zmírnit napětí, když začíná houstnout atmosféra. A co je moje největší kouzlo? Dokážu proměnit i pořádný průšvih ve vzpomínku, které se budete smát ještě za deset let!</p>
+    <p class="q">Co jsem?</p>
+    <div class="in">
+      <label class="sr" for="riddleIn">Odpověď na hádanku</label>
+      <input id="riddleIn" type="text" autocomplete="off" placeholder="Napište odpověď">
+      <button type="submit" class="btn">Otevřít truhlu</button>
+    </div>
+    <p class="hint" id="riddleHint">Nedaří se? <button type="button" id="hintBtn">Ukázat nápovědu</button></p>
+  </form>
+  <div class="reveal" id="reveal" hidden>
+    <p><strong>Truhla je otevřená!</strong> Uvnitř leží mapa k vašemu novomanželskému pokladu. Tak vzhůru za ním, to nejcennější vás teprve čeká!</p>
+    <a class="btn big" href="https://canva.link/qnta2kwx0wdqrpl" target="_blank" rel="noopener">Otevřít mapu k pokladu <svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+  </div>
+</div></div>
+
+<script>
+const VIEWS=['uvod','pribeh','les','brana','zamky','nadvori','kviz','sin','truhla'];
+// Tasks in path order along the board (start pawn → castle). Hotspot positions are % of the board image.
+const TASKS = [
+  {id:'pfg1sj9da26', n:1, title:'Recept na šťastné manželství', who:'oba',   kind:'Roztřiďte ingredience: do polévky šťastného manželství, nebo do koše.', pawn:'coral', x:26.0, y:82.6},
+  {id:'pjro3yr4c26', n:2, title:'Slovník manželky',             who:'filip', kind:'Přelož deset výroků manželky do řeči obyčejných smrtelníků.',          pawn:'green', x:35.3, y:71.7},
+  {id:'pqff5rwk526', n:3, title:'Slovník manžela',              who:'barca', kind:'Přelož deset výroků manžela do řeči obyčejných smrtelníků.',           pawn:'pink',  x:55.0, y:73.6},
+  {id:'pdc39j1jk26', n:4, title:'Manželství v praxi',           who:'filip', kind:'Devět situací ze společného života, vyber nejlepší reakci.',          pawn:'navy',  x:60.5, y:63.1},
+  {id:'pz27t7ee326', n:5, title:'Manželství v praxi',           who:'barca', kind:'Devět situací ze společného života, vyber nejlepší reakci.',          pawn:'teal',  x:61.7, y:50.0},
+  {id:'pf9pocd5a26', n:6, title:'Manželské přešlapy',           who:'oba',   kind:'Pexeso: ke každému manželskému přešlapu najděte jeho řešení.',        pawn:'blue',  x:51.6, y:45.1},
+];
+const WHO = {oba:'Pro oba', filip:'Jen pro Filipa', barca:'Jen pro Barču'};
+// Six locks of the castle gate (clue → one of the six keywords); answers are stored as hashes.
+const LOCKS = [
+  {clue:'Když neumíte číst myšlenky toho druhého, tahle schopnost vám pomůže zjistit, co cítí, co potřebuje a co se mu honí hlavou.', h:'36b2c7ec-ba846a6'},
+  {clue:'Není vidět ani se nedá koupit, díky ní můžeš druhému svěřit své radosti, obavy i tajemství.', h:'f9aa880c-ca7f0dd6'},
+  {clue:'Pomůže vám zůstat na jedné lodi, i když máte každý jiný názor. Znamená, že i druhý má právo cítit, myslet a rozhodovat se po svém.', h:'3f27db23-4e86eaf7'},
+  {clue:'Když jeden chce jít doprava a druhý doleva, pomůže vám najít cestu, na které ani jeden nemusí vždy prosadit svou.', h:'e6c65d66-8cb8534c'},
+  {clue:'Je potřeba, když se něco nedaří napoprvé, když se jeden z vás dlouho rozhoduje nebo když něco nedělá podle vašich představ.', h:'a904dc41-44e5e5b1'},
+  {clue:'Dává vztahu možnost pokračovat, když někdo udělá chybu, upřímně ji uzná a snaží se ji napravit.', h:'84913220-e684e7e'},
+];
+const RIDDLE_H='f9afb50-61972d5c';
+const laUrl = id => `https://learningapps.org/watch?v=${id}`;
+function norm(s){return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
+function hash(s){s=norm(s);let a=5381,b=52711;for(const c of s){const k=c.codePointAt(0);a=(a*33+k)>>>0;b=(b*31+k)>>>0;}return a.toString(16)+'-'+b.toString(16);}
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const $=id=>document.getElementById(id);
+const tick='<svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>';
+
+// ---------- persistence (per browser; tolerate blocked storage) ----------
+const KEY='danielkovi-quest-v2';
+let state={kw:{}, done:{}, locks:{}, riddle:'', view:'uvod'};
+try{ const s=localStorage.getItem(KEY); if(s) state=Object.assign(state, JSON.parse(s)); }catch(e){}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+
+// ---------- progress ----------
+function kwOf(t){ return (state.kw[t.id]||'').trim(); }
+function lockOpen(i){ const v=state.locks[i]; return !!v && hash(v)===LOCKS[i].h; }
+function viewDone(v){
+  switch(v){
+    case 'uvod': case 'pribeh': case 'brana': case 'nadvori': case 'sin': return true;
+    case 'les': return TASKS.every(t=>kwOf(t).length>0);
+    case 'zamky': return LOCKS.every((_,i)=>lockOpen(i));
+    case 'kviz': return !!state.done.kviz;
+    case 'truhla': return !!state.riddle && hash(state.riddle)===RIDDLE_H;
+  }
+}
+// what blocks "Dále" on a view (soft lock), null when free to go
+function blocker(v){
+  if(v==='les'){ const m=TASKS.filter(t=>!kwOf(t)).length; return m? `Chybí vám ještě ${m} ${m===1?'klíčové slovo':m<5?'klíčová slova':'klíčových slov'} z lesa.`:null; }
+  if(v==='zamky'){ const m=LOCKS.filter((_,i)=>!lockOpen(i)).length; return m? `Brána je ještě zamčená: ${m} ${m===1?'zámek':m<5?'zámky':'zámků'} čeká na klíčové slovo.`:null; }
+  if(v==='kviz') return state.done.kviz? null : 'Nejdřív spolu dokončete novomanželský kvíz a označte ho jako hotový.';
+  return null;
+}
+
+// ---------- views ----------
+// furthest screen the players have earned: the first one whose task is still open
+function reachIdx(){ for(let k=0;k<VIEWS.length;k++){ if(blocker(VIEWS[k])) return k; } return VIEWS.length-1; }
+let cur = VIEWS[Math.min(Math.max(0,VIEWS.indexOf(state.view)), reachIdx())];
+function go(v){
+  if(!VIEWS.includes(v)) return;
+  const i=VIEWS.indexOf(cur), j=VIEWS.indexOf(v);
+  if(j>i){ for(let k=i;k<j;k++){ const b=blocker(VIEWS[k]); if(b){ toast(b); return; } } }
+  cur=v; state.view=v; save(); hideToast();
+  document.querySelectorAll('.view').forEach(s=>{ s.classList.toggle('on',s.dataset.view===v); if(s.dataset.view===v) s.scrollTop=0; });
+  try{ history.replaceState(null,'','#'+v); }catch(e){}
+  refresh();
+  fitSpeech();
+}
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-go]'); if(g){ e.preventDefault(); go(g.dataset.go); }
+  const c=e.target.closest('[data-close]'); if(c){ closeOverlays(); }
+  const o=e.target.closest('[data-open]'); if(o){ openOverlay(o.dataset.open); }
+});
+document.addEventListener('keydown',e=>{
+  if(document.querySelector('.overlay.on')){ if(e.key==='Escape') closeOverlays(); return; }
+  if(e.target.matches('input,textarea')) return;
+  if(e.key==='ArrowRight') next();
+  if(e.key==='ArrowLeft') back();
+});
+function next(){ const i=VIEWS.indexOf(cur); if(i<VIEWS.length-1) go(VIEWS[i+1]); }
+function back(){ const i=VIEWS.indexOf(cur); if(i>0) go(VIEWS[i-1]); }
+document.addEventListener('click',e=>{ if(e.target.closest('[data-next]')) next(); if(e.target.closest('[data-back]')) back(); });
+
+let toastT=null;
+function toast(msg){ $('toast').innerHTML=`<span>${esc(msg)}</span>`; $('toast').classList.add('on'); clearTimeout(toastT); toastT=setTimeout(hideToast,4000); }
+function hideToast(){ $('toast').classList.remove('on'); }
+
+// ---------- overlays ----------
+function openOverlay(which){
+  closeOverlays();
+  const el=$({locks:'ovLocks',riddle:'ovRiddle',task:'ovTask'}[which]); if(!el) return;
+  el.classList.add('on');
+  const f=el.querySelector('input:not([hidden]),button.x'); if(f && which!=='task') setTimeout(()=>f.focus(),30);
+}
+function closeOverlays(){ document.querySelectorAll('.overlay.on').forEach(o=>o.classList.remove('on')); }
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) closeOverlays(); }));
+
+// ---------- forest: pawns, chips, task panel ----------
+let curTask=null;
+TASKS.forEach(t=>{
+  const b=document.createElement('button');
+  b.type='button'; b.className='pawn'; b.id='pawn-'+t.id;
+  b.style.left=t.x+'%'; b.style.top=t.y+'%';
+  b.setAttribute('aria-label',`Úkol ${t.n}: ${t.title}`);
+  b.innerHTML=`<span class="n">${t.n}</span><img src="img/pawn-${t.pawn}.png" alt="">`;
+  b.addEventListener('click',()=>openTask(t));
+  $('pawns').appendChild(b);
+  const c=document.createElement('button');
+  c.type='button'; c.className='chip'; c.id='chip-'+t.id;
+  c.innerHTML=`<b>${t.n}</b><span>${esc(t.title)}</span>`;
+  c.addEventListener('click',()=>openTask(t));
+  $('chips').appendChild(c);
+});
+const cnt=document.createElement('span'); cnt.className='count'; cnt.id='kwCount'; $('chips').prepend(cnt);
+function openTask(t){
+  curTask=t;
+  $('taskKicker').innerHTML=`Úkol ${t.n} z 6 · <span class="who who-${t.who}">${WHO[t.who]}</span>`;
+  $('taskTitle').textContent=t.title;
+  $('taskKind').textContent=t.kind;
+  $('taskOpen').href=laUrl(t.id);
+  $('taskKw').value=kwOf(t);
+  openOverlay('task');
+  paintTask();
+  setTimeout(()=>$('taskKw').focus(),30);
+}
+function paintTask(){ const ok=$('taskKw').value.trim().length>0; $('taskCheck').classList.toggle('ok',ok); $('taskKw').classList.toggle('ok',ok); }
+$('taskKw').addEventListener('input',()=>{ state.kw[curTask.id]=$('taskKw').value; save(); paintTask(); refresh(); });
+$('taskKw').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); $('taskSave').click(); } });
+$('taskSave').addEventListener('click',()=>{ state.kw[curTask.id]=$('taskKw').value; save(); closeOverlays(); refresh(); });
+
+// ---------- gate locks ----------
+const lockIco='<svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+const openIco='<svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>';
+LOCKS.forEach((l,i)=>{
+  const el=document.createElement('div');
+  el.className='lock'; el.id='lock-'+i;
+  el.innerHTML=`<div class="ico">${lockIco}</div><p>${esc(l.clue)}</p>
+    <form class="in"><label class="sr" for="lock-in-${i}">Klíčové slovo k zámku ${i+1}</label><input id="lock-in-${i}" type="text" list="kwList" autocomplete="off" placeholder="Zámek ${i+1}"><button type="submit" class="try">Odemknout</button></form>
+    <div class="msg" aria-live="polite"></div>`;
+  $('locks').appendChild(el);
+  const inp=el.querySelector('input'), msg=el.querySelector('.msg');
+  inp.value=state.locks[i]||'';
+  el.querySelector('form').addEventListener('submit',e=>{
+    e.preventDefault();
+    const v=inp.value.trim(); if(!v) return;
+    el.classList.remove('wrong');
+    if(hash(v)===l.h){ state.locks[i]=v; save(); refresh(); const nx=LOCKS.findIndex((_,k)=>!lockOpen(k)); if(nx>=0 && !matchMedia('(min-width:641px)').matches) setTimeout(()=>showLock(nx),500); }
+    else { void el.offsetWidth; el.classList.add('wrong'); msg.textContent='Tenhle klíč sem nepasuje. Zkuste jiné slovo.'; }
+  });
+  inp.addEventListener('input',()=>{ el.classList.remove('wrong'); if(!el.classList.contains('open')) msg.textContent=''; });
+  const d=document.createElement('button'); d.type='button'; d.className='dot'; d.setAttribute('aria-label','Zámek '+(i+1)); d.addEventListener('click',()=>showLock(i)); $('lockDots').appendChild(d);
+});
+// phone stepper: which lock card is visible (all are shown on wide screens via CSS)
+let lockIdx=0;
+function showLock(i){ lockIdx=(i+LOCKS.length)%LOCKS.length; LOCKS.forEach((_,k)=>$('lock-'+k).classList.toggle('show',k===lockIdx)); $('lockPos').textContent=`Zámek ${lockIdx+1} / ${LOCKS.length}`; [...$('lockDots').children].forEach((d,k)=>{ d.classList.toggle('cur',k===lockIdx); d.classList.toggle('done',lockOpen(k)); }); }
+$('lockPrev').addEventListener('click',()=>showLock(lockIdx-1));
+$('lockNext').addEventListener('click',()=>showLock(lockIdx+1));
+
+// ---------- quiz ----------
+document.querySelectorAll('[data-done]').forEach(b=>b.addEventListener('click',()=>{ const k=b.dataset.done; state.done[k]=!state.done[k]; save(); refresh(); }));
+
+// ---------- riddle ----------
+$('riddle').addEventListener('submit',e=>{
+  e.preventDefault();
+  const v=$('riddleIn').value.trim(); if(!v) return;
+  $('riddle').classList.remove('wrong');
+  if(hash(v)===RIDDLE_H){ state.riddle=v; save(); refresh(); }
+  else { void $('riddle').offsetWidth; $('riddle').classList.add('wrong'); }
+});
+$('hintBtn').addEventListener('click',()=>{ $('riddleHint').textContent='Nápověda: jedno slovo, pět písmen, začíná na H.'; });
+
+// ---------- paint everything from state ----------
+function refresh(){
+  // forest
+  const n=TASKS.filter(t=>kwOf(t)).length;
+  $('kwCount').textContent=`${n} / ${TASKS.length} klíčových slov`;
+  TASKS.forEach(t=>{ const ok=!!kwOf(t); $('pawn-'+t.id).classList.toggle('done',ok); $('chip-'+t.id).classList.toggle('done',ok); });
+  // gate
+  const words=TASKS.map(kwOf);
+  $('kwWords').innerHTML=words.map((w,i)=>`<span class="word${w?'':' empty'}">${w?esc(w):'slovo '+(i+1)}</span>`).join('');
+  $('kwList').innerHTML=words.filter(Boolean).map(w=>`<option value="${esc(w)}"></option>`).join('');
+  let open=0;
+  LOCKS.forEach((l,i)=>{ const el=$('lock-'+i), ok=lockOpen(i); if(ok) open++; el.classList.toggle('open',ok); el.querySelector('.ico').innerHTML=ok?openIco:lockIco; if(ok) el.querySelector('.msg').textContent='Zámek '+(i+1)+' je odemčený.'; });
+  $('lockCount').textContent=`${open} / ${LOCKS.length} zámků`;
+  showLock(lockIdx);
+  $('gateDone').hidden=!viewDone('zamky'); $('hotLocks').classList.toggle('done',viewDone('zamky'));
+  // quiz
+  document.querySelectorAll('[data-done]').forEach(b=>b.classList.toggle('on',!!state.done[b.dataset.done]));
+  $('hotQuiz').classList.toggle('done',!!state.done.kviz);
+  // chest
+  const solved=viewDone('truhla');
+  $('riddle').hidden=solved; $('reveal').hidden=!solved; $('mapBtn').hidden=!solved; $('chestBtn').hidden=solved; $('hotChest').classList.toggle('done',solved);
+  // continue button of the current screen dims until its task is complete
+  const b=blocker(cur);
+  document.querySelectorAll('.view.on [data-next]').forEach(el=>el.classList.toggle('locked',!!b));
+}
+// ---------- fit story text to its parchment (no clipping, no scrolling at any size) ----------
+function fitSpeech(){
+  const wide=matchMedia('(min-width:900px)').matches;
+  document.querySelectorAll('.view.on .speech').forEach(el=>{
+    const sw=el.closest('.scene').clientWidth||1000;
+    const max=wide?Math.min(20,Math.max(12,sw*0.015)):17, min=wide?8:10.5;
+    const fits=()=>el.scrollHeight<=el.clientHeight+1;
+    el.style.fontSize=max+'px';
+    if(fits()) return;
+    let lo=min, hi=max;
+    for(let k=0;k<9;k++){ const mid=(lo+hi)/2; el.style.fontSize=mid+'px'; if(fits()) lo=mid; else hi=mid; }
+    el.style.fontSize=lo+'px';
+  });
+}
+new ResizeObserver(fitSpeech).observe(document.querySelector('.stage'));
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitSpeech);
+window.addEventListener('load',fitSpeech);
+go(cur);
+</script>
+
+</body>
+</html>
