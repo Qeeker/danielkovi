@@ -85,10 +85,11 @@ button{font:inherit;color:inherit}
   .below{height:var(--row);flex-wrap:nowrap}
   /* border 265:225 keeps the kit's corner proportions; height follows the text up to max-height */
   .speech{position:absolute;margin:0;max-width:none;width:auto;height:auto;flex:none;border-width:4.1cqw 4.8cqw;padding:.1em .5em;font-weight:500;line-height:1.32;z-index:1}
-  .pos-intro{left:55%;top:5%;width:40%;max-height:84%}
-  .pos-gate{left:55%;top:5%;width:39%;max-height:60%}
-  .pos-court{left:6%;top:4%;width:43%;max-height:60%}
-  .pos-hall{left:55%;top:6%;width:39%;max-height:60%}
+  /* each box hangs beside the owl's head (the owl is the speaker): intro/gate/hall owl at ~50% x, 45-50% y; courtyard owl at ~65% x, 40% y */
+  .pos-intro{left:54%;top:8%;width:40%;max-height:84%}
+  .pos-gate{left:54%;top:27%;width:39%;max-height:60%}
+  .pos-court{left:18%;top:15%;width:43%;max-height:60%}
+  .pos-hall{left:54%;top:22%;width:39%;max-height:60%}
 }
 
 /* pawns & hotspots (span[role=button], not <button>: Firefox clips a button's overflow, which would hide the halo): in-scene targets glow, breathe and bob (no outline rings, by request) so they read as clickable on a busy painting;
