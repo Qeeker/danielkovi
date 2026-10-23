@@ -6,6 +6,7 @@
 <meta name="description" content="Svatební hra pro Barču a Filipa: cesta kouzelným lesem k hradu a k pokladu.">
 <meta name="robots" content="noindex">
 <style>html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}[hidden]{display:none!important}</style>
+<script>try{if(sessionStorage.getItem('danielkovi-gate-off'))document.documentElement.classList.add('gate-off')}catch(e){}</script>
 <title>Poklad Danielkových</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&display=swap">
@@ -73,11 +74,20 @@ button{font:inherit;color:inherit}
 .speech .tip{font-size:.88em;color:var(--paper-muted);font-style:italic;border-top:1px dashed #c5a76a;padding-top:.45em;margin-top:.6em}
 @media (max-width:899px){
   /* picture on top, parchment card filling the rest of the screen underneath it */
-  .view.story .scene{width:100%;max-width:640px;display:flex;flex-direction:column;flex:0 1 auto;min-height:0}
+  .view.story .scene{width:100%;max-width:640px;display:flex;flex-direction:column;flex:0 0 auto}
   .view.story .below:last-child{margin-top:auto}
   .view.story .scene img.bg{flex:0 0 auto;width:100%;max-height:38dvh;object-fit:cover;object-position:var(--focus,50% 50%)}
-  .speech{max-width:none;margin:6px 0 4px;filter:none;flex:0 1 auto}
+  .speech{max-width:none;margin:6px 0 4px;filter:none;flex:0 0 auto}
+  /* small-screen gate: the hunt is built for a big screen; the notice covers the page until "přesto pokračovat"
+     (remembered for the browser session). Driven by the same breakpoint as the stacked layout, so widening the
+     window or rotating a tablet clears it by itself. */
+  html:not(.gate-off) .gate{display:flex}
 }
+.gate{display:none;position:fixed;inset:0;z-index:30;background:var(--ink);align-items:center;justify-content:center;padding:20px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));overflow:auto}
+.gate-card{background:var(--parchment);color:var(--paper-ink);border-radius:14px;border:2px solid var(--parchment-2);padding:22px 20px;max-width:420px;display:grid;gap:12px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.gate-card h2{font-size:22px}
+.gate-card p{font-size:15.5px}
+.gate-card .back{color:var(--paper-muted);justify-self:center;margin-top:4px}
 @media (min-width:900px){
   .view.on{display:grid;grid-template-rows:var(--head) minmax(0,1fr) var(--row);align-items:center;justify-items:center}
   .view-head{display:grid;align-content:center;height:var(--head)}
@@ -337,6 +347,15 @@ button{font:inherit;color:inherit}
 
 <div class="toast" id="toast" role="status"></div>
 <button type="button" class="reset" id="reset" title="Smazat uložený postup a začít od začátku">↺ začít znovu</button>
+
+<div class="gate" id="gate" role="dialog" aria-labelledby="gateTitle">
+  <div class="gate-card">
+    <div class="kicker">Malá rada od sovy</div>
+    <h2 id="gateTitle">Tahle výprava je stavěná na velkou obrazovku</h2>
+    <p>Otevřete ji prosím na počítači nebo notebooku, herní plán, zámky i mapa se tam hrají mnohem pohodlněji. Na tabletu pomůže otočit ho naležato.</p>
+    <button type="button" class="back" id="gateGo">přesto pokračovat ›</button>
+  </div>
+</div>
 
 <!-- task panel -->
 <div class="overlay" id="ovTask"><div class="panel" role="dialog" aria-modal="true" aria-labelledby="taskTitle">
@@ -615,6 +634,7 @@ function fitSpeech(){
   });
 }
 new ResizeObserver(fitSpeech).observe(document.querySelector('.stage'));
+$('gateGo').addEventListener('click',()=>{ document.documentElement.classList.add('gate-off'); try{ sessionStorage.setItem('danielkovi-gate-off','1'); }catch(e){} });
 $('reset').addEventListener('click',()=>{
   if(!confirm('Smazat uložený postup (klíčová slova, zámky, hádanku) a začít od začátku?')) return;
   try{ localStorage.removeItem(KEY); }catch(e){}
