@@ -91,8 +91,7 @@ button{font:inherit;color:inherit}
   .pos-hall{left:55%;top:6%;width:39%;max-height:60%}
 }
 
-/* pawns & hotspots (span[role=button], not <button>: Firefox clips a button's overflow, which would hide the rings,
-   halo and number badges): in-scene targets glow, breathe and bob (no outline rings, by request) so they read as clickable on a busy painting;
+/* pawns & hotspots (span[role=button], not <button>: Firefox clips a button's overflow, which would hide the halo): in-scene targets glow, breathe and bob (no outline rings, by request) so they read as clickable on a busy painting;
    hover lifts them, press squashes them. Done targets go calm and green. */
 .pawn{position:absolute;transform:translate(-50%,-100%);width:clamp(26px,4.4%,60px);background:none;border:0;padding:0;cursor:pointer;filter:drop-shadow(0 6px 6px rgba(0,0,0,.6)) drop-shadow(0 0 5px rgba(217,179,91,.55));animation:glow 2.2s ease-in-out infinite alternate;transition:filter .2s}
 .pawn::before{content:"";position:absolute;left:50%;bottom:-6%;width:150%;height:28%;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse,rgba(217,179,91,.55),rgba(217,179,91,0) 70%)}
@@ -103,8 +102,6 @@ button{font:inherit;color:inherit}
 .pawn.done,.pawn.done img{animation:none}
 .pawn.done{filter:drop-shadow(0 6px 6px rgba(0,0,0,.6))}
 .pawn.done::before{background:radial-gradient(ellipse,rgba(111,149,80,.5),rgba(111,149,80,0) 70%)}
-.pawn .n{position:absolute;left:50%;top:-20px;transform:translateX(-50%);min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--parchment);color:var(--paper-ink);font-family:var(--display);font-weight:700;font-size:13px;display:grid;place-items:center;line-height:1;border:1px solid var(--gold-2)}
-.pawn.done .n{background:var(--moss);color:#0f1a12;border-color:var(--moss)}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7%)}}
 @keyframes glow{from{filter:drop-shadow(0 6px 6px rgba(0,0,0,.6)) drop-shadow(0 0 3px rgba(217,179,91,.35))}to{filter:drop-shadow(0 6px 6px rgba(0,0,0,.6)) drop-shadow(0 0 10px rgba(255,220,130,.95))}}
 .hot{position:absolute;transform:translate(-50%,-50%);width:clamp(44px,8%,90px);aspect-ratio:1;border-radius:50%;border:0;background:radial-gradient(circle,rgba(255,225,140,.42),rgba(217,179,91,.18) 45%,rgba(217,179,91,0) 70%);cursor:pointer;display:grid;place-items:center;padding:0;transition:transform .2s cubic-bezier(.34,1.56,.64,1),filter .2s}
@@ -501,7 +498,7 @@ TASKS.forEach(t=>{
   b.setAttribute('role','button'); b.tabIndex=0; b.className='pawn'; b.id='pawn-'+t.id;
   b.style.left=t.x+'%'; b.style.top=t.y+'%';
   b.setAttribute('aria-label',`Úkol ${t.n}: ${t.title}`);
-  b.innerHTML=`<span class="n">${t.n}</span><img src="img/pawn-${t.pawn}.png" alt="">`;
+  b.innerHTML=`<img src="img/pawn-${t.pawn}.png" alt="">`;
   b.addEventListener('click',()=>openTask(t));
   $('pawns').appendChild(b);
 });
