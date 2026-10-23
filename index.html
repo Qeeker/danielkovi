@@ -47,18 +47,20 @@ button{font:inherit;color:inherit}
 
 /* ---------- stage & views ---------- */
 .stage{min-height:0;position:relative;overflow:hidden}
-.view{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;gap:12px;padding-block:14px calc(14px + env(safe-area-inset-bottom,0px));overflow:auto}
+/* every view is the same frame: title slot (--head), picture, one action row (--row). On wide screens the view is a
+   size container and a 3-row grid, so the scene takes exactly the height left over (100cqh minus the two slots) and
+   lands in the same rectangle on all nine screens. */
+.view{--head:84px;--row:50px;--gap:12px;position:absolute;inset:0;display:none;flex-direction:column;align-items:center;gap:var(--gap);padding-block:14px calc(14px + env(safe-area-inset-bottom,0px));overflow:auto;container-type:size}
 .btn.locked{opacity:.45;filter:none}
 .back{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:14px;padding:6px 8px}
 .view.on{display:flex}
-.view-head{text-align:center;max-width:70ch}
+.view-head{text-align:center;max-width:70ch;min-width:0}
 .kicker{font-family:var(--display);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
-.view-head h2{font-size:clamp(19px,2.4vw,26px);margin-top:4px}
-/* width follows the free height so a 16:9 scene always fits without page scroll */
+.view-head h2,.view-head h1{font-size:clamp(19px,2.4vw,26px);margin-top:4px}
+.view-head h1{color:var(--gold);letter-spacing:.02em}
+/* narrow fallback: width follows the free height so a 16:9 scene fits without page scroll; wide screens use cqh below */
 .scene{position:relative;width:min(100%,calc((100dvh - 225px) * 1.7917));border-radius:12px;overflow:hidden;background:var(--ink-2);box-shadow:0 20px 60px rgba(0,0,0,.5);border:1px solid var(--ink-3);container-type:inline-size;flex:0 0 auto}
 .scene img.bg{width:100%;height:auto;aspect-ratio:1376/768;object-fit:cover}
-.view.story .scene{width:min(100%,calc((100dvh - 175px) * 1.7917))}
-.hero .scene{width:min(100%,calc((100dvh - 200px) * 1.7917))}
 .below{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;max-width:100%;min-width:0}
 
 /* speech: the vine-framed parchment from img/scroll (nine-slice kit, slices 225/265 px of 902x1526 as percentages),
@@ -77,6 +79,10 @@ button{font:inherit;color:inherit}
   .speech{max-width:none;margin:6px 0 4px;filter:none;flex:0 1 auto}
 }
 @media (min-width:900px){
+  .view.on{display:grid;grid-template-rows:var(--head) minmax(0,1fr) var(--row);align-items:center;justify-items:center}
+  .view-head{display:grid;align-content:center;height:var(--head)}
+  .scene{width:min(100%,calc((100cqh - var(--head) - var(--row) - 2 * var(--gap)) * 1.7917))}
+  .below{height:var(--row);flex-wrap:nowrap}
   /* border 265:225 keeps the kit's corner proportions; height follows the text up to max-height */
   .speech{position:absolute;margin:0;max-width:none;width:auto;height:auto;flex:none;border-width:4.1cqw 4.8cqw;padding:.1em .5em;font-weight:500;line-height:1.32;z-index:1}
   .pos-intro{left:55%;top:5%;width:40%;max-height:84%}
@@ -84,9 +90,6 @@ button{font:inherit;color:inherit}
   .pos-court{left:6%;top:4%;width:43%;max-height:60%}
   .pos-hall{left:55%;top:6%;width:39%;max-height:60%}
 }
-.hero-text{text-align:center;max-width:62ch}
-.hero-text h1{font-size:clamp(24px,3.6vw,40px);color:var(--gold);letter-spacing:.02em}
-.hero-text p{color:var(--muted);margin-top:6px}
 
 /* pawns & hotspots (span[role=button], not <button>: Firefox clips a button's overflow, which would hide the rings,
    halo and number badges): in-scene targets glow, breathe and bob (no outline rings, by request) so they read as clickable on a busy painting;
@@ -231,12 +234,9 @@ button{font:inherit;color:inherit}
 <main class="stage">
 
 <!-- 1 cover -->
-<section class="view hero gutter" data-view="uvod" data-ch="1">
+<section class="view gutter" data-view="uvod" data-ch="1">
+  <div class="view-head"><div class="kicker">Společná cesta za manželským pokladem</div><h1>Barča &amp; Filip Danielkovi</h1></div>
   <div class="scene"><img class="bg" src="img/01-cover.png" alt="Barča a Filip Danielkovi v kouzelném lese, v dálce hrad" fetchpriority="high"></div>
-  <div class="hero-text">
-    <h1>Barča &amp; Filip Danielkovi</h1>
-    <p>Společná cesta za manželským pokladem</p>
-  </div>
   <div class="below"><button type="button" class="btn big" data-next>Začít dobrodružství <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
 </section>
 
@@ -262,8 +262,7 @@ button{font:inherit;color:inherit}
     <img class="bg" src="img/03-board.png" alt="Herní plán: cesta lesem od startu k hradu se šesti figurkami">
     <div id="pawns"></div>
   </div>
-  <div class="below" id="chips"></div>
-  <div class="below"><button type="button" class="back" data-back>‹ zpět</button><button type="button" class="btn big" data-next>Pokračovat <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+  <div class="below"><button type="button" class="back" data-back>‹ zpět</button><span class="count" id="kwCount"></span><button type="button" class="btn big" data-next>Pokračovat <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
 </section>
 
 <!-- 4 gate story -->
@@ -307,10 +306,7 @@ button{font:inherit;color:inherit}
     <img class="bg" src="img/07-courtyard.png" alt="Barča a Filip na nádvoří před zamčenými dveřmi hradu">
     <a class="hot" id="hotQuiz" style="left:48.2%;top:52.6%" href="https://app.faabul.com/l/Cf7S8OQfOkNF7B?lang=cs" target="_blank" rel="noopener" aria-label="Spustit novomanželský kvíz" data-quiz><img src="img/key.png" alt=""></a>
   </div>
-  <div class="below">
-    <button type="button" class="done-toggle" data-done="kviz"><span class="check"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>Kvíz máme za sebou</button>
-  </div>
-  <div class="below"><button type="button" class="back" data-back>‹ zpět</button><button type="button" class="btn big" data-next>Pokračovat <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
+  <div class="below"><button type="button" class="back" data-back>‹ zpět</button><button type="button" class="done-toggle" data-done="kviz"><span class="check"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>Kvíz máme za sebou</button><button type="button" class="btn big" data-next>Pokračovat <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
 </section>
 
 <!-- 8 hall story -->
@@ -333,10 +329,7 @@ button{font:inherit;color:inherit}
     <img class="bg" src="img/09-hall.png" alt="Barča a Filip v hradní síni u zamčené truhly s mapou">
     <span role="button" tabindex="0" class="hot" id="hotChest" style="left:51.8%;top:54%;width:clamp(56px,10%,120px)" data-open="riddle" aria-label="Otevřít zámek truhly"><img src="img/lock-key.png" alt="" style="width:70%"></span>
   </div>
-  <div class="below">
-    <button type="button" class="btn big" data-open="riddle" id="chestBtn">Otevřít truhlu</button>
-  </div>
-  <div class="below"><button type="button" class="back" data-back>‹ zpět</button></div>
+  <div class="below"><button type="button" class="back" data-back>‹ zpět</button><button type="button" class="btn big" data-open="riddle" id="chestBtn">Otevřít truhlu</button></div>
 </section>
 
 </main>
@@ -512,7 +505,6 @@ TASKS.forEach(t=>{
   b.addEventListener('click',()=>openTask(t));
   $('pawns').appendChild(b);
 });
-const cnt=document.createElement('span'); cnt.className='count'; cnt.id='kwCount'; $('chips').append(cnt);
 function openTask(t){
   curTask=t;
   $('taskKicker').innerHTML=`Úkol ${t.n} z 6 · <span class="who who-${t.who}">${WHO[t.who]}</span>`;
