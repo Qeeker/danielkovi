@@ -285,10 +285,6 @@ button{font:inherit;color:inherit}
     <img class="bg" src="img/05-gate.png" alt="Barča a Filip stojí před mříží hradní brány s visacím zámkem">
     <span role="button" tabindex="0" class="hot" id="hotLocks" style="left:48.8%;top:50%" data-open="locks" aria-label="Otevřít šest zámků brány"><img src="img/key.png" alt=""></span>
   </div>
-  <div class="below">
-    <span class="count" id="lockCount">0 / 6 zámků</span>
-    <button type="button" class="btn" data-open="locks">Odemknout zámky <svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></button>
-  </div>
   <div class="below"><button type="button" class="back" data-back>‹ zpět</button><button type="button" class="btn big" data-next>Pokračovat <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button></div>
 </section>
 
@@ -592,14 +588,12 @@ function refresh(){
   // words already used to open a lock disappear from the other locks' pickers
   const used=new Set(LOCKS.map((_,i)=>lockOpen(i)?norm(state.locks[i]):null).filter(Boolean));
   const free=words.filter(w=>w && !used.has(norm(w)));
-  let open=0;
   LOCKS.forEach((l,i)=>{
-    const el=$('lock-'+i), ok=lockOpen(i); if(ok) open++;
+    const el=$('lock-'+i), ok=lockOpen(i);
     el.classList.toggle('open',ok); el.querySelector('.ico').innerHTML=ok?openIco:lockIco;
     if(ok) el.querySelector('.msg').textContent='Zámek '+(i+1)+' je odemčený.';
     el.querySelector('.pick').innerHTML=ok?'':free.map(w=>`<button type="button" class="word" data-w="${esc(w)}">${esc(w)}</button>`).join('');
   });
-  $('lockCount').textContent=`${open} / ${LOCKS.length} zámků`;
   showLock(lockIdx);
   $('gateDone').hidden=!viewDone('zamky'); $('hotLocks').classList.toggle('done',viewDone('zamky'));
   // quiz
