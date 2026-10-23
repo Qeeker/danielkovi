@@ -56,56 +56,88 @@ button{font:inherit;color:inherit}
 .view-head h2{font-size:clamp(19px,2.4vw,26px);margin-top:4px}
 /* width follows the free height so a 16:9 scene always fits without page scroll */
 .scene{position:relative;width:min(100%,calc((100dvh - 225px) * 1.7917));border-radius:12px;overflow:hidden;background:var(--ink-2);box-shadow:0 20px 60px rgba(0,0,0,.5);border:1px solid var(--ink-3);container-type:inline-size;flex:0 0 auto}
-.scene img.bg{width:100%;height:auto;aspect-ratio:1376/768}
+.scene img.bg{width:100%;height:auto;aspect-ratio:1376/768;object-fit:cover}
 .view.story .scene{width:min(100%,calc((100dvh - 175px) * 1.7917))}
 .hero .scene{width:min(100%,calc((100dvh - 200px) * 1.7917))}
 .below{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;max-width:100%;min-width:0}
 
-/* speech: a parchment drawn in CSS. On wide screens it sits over (and fully covers) the owl's painted scroll;
-   on narrow screens it is a card under the picture. In both cases JS fits the type size to the box. */
-/* the vine-framed scroll from the original site, as a nine-slice border so the flourishes never distort */
-.speech{position:relative;color:var(--paper-ink);border-style:solid;border-width:40px 46px 34px 48px;border-image:url(img/scroll.png) 95 110 80 110 fill stretch;background:none;padding:0 2px;font-size:16px;line-height:1.4;width:100%;max-width:680px;flex:1 1 auto;min-height:0;overflow:hidden;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
+/* speech: the vine-framed parchment from img/scroll (nine-slice kit, slices 225/265 px of 902x1526 as percentages),
+   so the box grows with its text and the flourishes never distort. On wide screens it floats next to the owl in the
+   (now text-free) painting; on narrow screens it is a card under the picture. JS only shrinks the type when the
+   text would not fit the box's maximum height. */
+.speech{position:relative;color:var(--paper-ink);border-style:solid;border-width:44px 52px;border-image:url(img/scroll-full.png) 24.95% 17.37% fill stretch;background:none;padding:2px 6px;font-size:16px;line-height:1.4;width:100%;max-width:680px;flex:1 1 auto;min-height:0;overflow:hidden;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
 .speech p + p{margin-top:.55em}
 .speech strong{color:#2a1a08}
 .speech .tip{font-size:.88em;color:var(--paper-muted);font-style:italic;border-top:1px dashed #c5a76a;padding-top:.45em;margin-top:.6em}
 @media (max-width:899px){
   /* picture on top, parchment card filling the rest of the screen underneath it */
-  .view.story .scene{width:100%;max-width:640px;display:flex;flex-direction:column;flex:1 1 auto;min-height:0}
+  .view.story .scene{width:100%;max-width:640px;display:flex;flex-direction:column;flex:0 1 auto;min-height:0}
+  .view.story .below:last-child{margin-top:auto}
   .view.story .scene img.bg{flex:0 0 auto;width:100%;max-height:38dvh;object-fit:cover;object-position:var(--focus,50% 50%)}
-  .speech{max-width:none;margin:6px 0 4px;filter:none}
+  .speech{max-width:none;margin:6px 0 4px;filter:none;flex:0 1 auto}
 }
 @media (min-width:900px){
-  .speech{position:absolute;margin:0;max-width:none;width:auto;height:auto;flex:none;border-width:6.4cqw 7.4cqw 5.4cqw 7.6cqw;padding:0 .3em;font-weight:700;line-height:1.3;z-index:1}
-  .pos-intro{left:52%;top:17%;width:37%;min-height:43%;max-height:76%}
-  .pos-gate{left:50%;top:6%;width:39%;min-height:44%;max-height:54%}
-  .pos-court{left:11%;top:1.5%;width:41%;min-height:43%;max-height:54%}
-  .pos-hall{left:51%;top:7%;width:38%;min-height:44%;max-height:54%}
+  /* border 265:225 keeps the kit's corner proportions; height follows the text up to max-height */
+  .speech{position:absolute;margin:0;max-width:none;width:auto;height:auto;flex:none;border-width:4.1cqw 4.8cqw;padding:.1em .5em;font-weight:500;line-height:1.32;z-index:1}
+  .pos-intro{left:55%;top:5%;width:40%;max-height:84%}
+  .pos-gate{left:55%;top:5%;width:39%;max-height:60%}
+  .pos-court{left:6%;top:4%;width:43%;max-height:60%}
+  .pos-hall{left:55%;top:6%;width:39%;max-height:60%}
 }
 .hero-text{text-align:center;max-width:62ch}
 .hero-text h1{font-size:clamp(24px,3.6vw,40px);color:var(--gold);letter-spacing:.02em}
 .hero-text p{color:var(--muted);margin-top:6px}
 
-/* pawns & hotspots */
-.pawn{position:absolute;transform:translate(-50%,-100%);width:clamp(26px,4.4%,60px);background:none;border:0;padding:0;cursor:pointer;filter:drop-shadow(0 6px 6px rgba(0,0,0,.6))}
+/* pawns & hotspots (span[role=button], not <button>: Firefox clips a button's overflow, which would hide the rings,
+   halo and number badges): in-scene targets glow, breathe and bob so they read as clickable on a busy painting;
+   hover lifts them, press squashes them. Done targets go calm and green. */
+.pawn{position:absolute;transform:translate(-50%,-100%);width:clamp(26px,4.4%,60px);background:none;border:0;padding:0;cursor:pointer;filter:drop-shadow(0 6px 6px rgba(0,0,0,.6)) drop-shadow(0 0 5px rgba(217,179,91,.55));animation:glow 2.2s ease-in-out infinite alternate;transition:filter .2s}
 .pawn::after{content:"";position:absolute;left:50%;bottom:-6%;width:150%;height:28%;transform:translateX(-50%);border-radius:50%;border:2px solid var(--gold);opacity:.9;animation:pulse 2.2s ease-out infinite}
-.pawn img{width:100%;height:auto;aspect-ratio:1112/1974;transition:transform .2s}
-.pawn:hover img,.pawn:focus-visible img{transform:translateY(-6%) scale(1.06)}
-.pawn .n{position:absolute;left:50%;top:-20px;transform:translateX(-50%);min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--parchment);color:var(--paper-ink);font-family:var(--display);font-weight:700;font-size:13px;display:grid;place-items:center;line-height:1;border:1px solid var(--gold-2)}
+.pawn::before{content:"";position:absolute;left:50%;bottom:-6%;width:150%;height:28%;transform:translateX(-50%);border-radius:50%;background:radial-gradient(ellipse,rgba(217,179,91,.55),rgba(217,179,91,0) 70%)}
+.pawn img{width:100%;height:auto;aspect-ratio:1112/1974;transition:transform .2s cubic-bezier(.34,1.56,.64,1);animation:bob 2.2s ease-in-out infinite}
+.pawn:hover,.pawn:focus-visible{filter:drop-shadow(0 10px 10px rgba(0,0,0,.6)) drop-shadow(0 0 12px rgba(255,220,130,.95));animation:none}
+.pawn:hover img,.pawn:focus-visible img{transform:translateY(-10%) scale(1.12);animation:none}
+.pawn:active img{transform:translateY(-2%) scale(1.02);transition-duration:.06s}
+.pawn.done,.pawn.done img{animation:none}
+.pawn.done{filter:drop-shadow(0 6px 6px rgba(0,0,0,.6))}
 .pawn.done::after{border-color:var(--moss);animation:none}
+.pawn.done::before{background:radial-gradient(ellipse,rgba(111,149,80,.5),rgba(111,149,80,0) 70%)}
+.pawn .n{position:absolute;left:50%;top:-20px;transform:translateX(-50%);min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--parchment);color:var(--paper-ink);font-family:var(--display);font-weight:700;font-size:13px;display:grid;place-items:center;line-height:1;border:1px solid var(--gold-2)}
 .pawn.done .n{background:var(--moss);color:#0f1a12;border-color:var(--moss)}
 @keyframes pulse{0%{transform:translateX(-50%) scale(.7);opacity:.9}100%{transform:translateX(-50%) scale(1.6);opacity:0}}
-.hot{position:absolute;transform:translate(-50%,-50%);width:clamp(44px,8%,90px);aspect-ratio:1;border-radius:50%;border:0;background:radial-gradient(circle,rgba(217,179,91,.35),rgba(217,179,91,0) 70%);cursor:pointer;display:grid;place-items:center;padding:0}
-.hot::after{content:"";position:absolute;inset:18%;border-radius:50%;border:2px solid var(--gold);animation:ring 2.2s ease-out infinite}
-.hot img{width:60%;height:auto;filter:drop-shadow(0 4px 6px rgba(0,0,0,.7))}
-.hot.done::after{border-color:var(--moss);animation:none}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7%)}}
+@keyframes glow{from{filter:drop-shadow(0 6px 6px rgba(0,0,0,.6)) drop-shadow(0 0 3px rgba(217,179,91,.35))}to{filter:drop-shadow(0 6px 6px rgba(0,0,0,.6)) drop-shadow(0 0 10px rgba(255,220,130,.95))}}
+.hot{position:absolute;transform:translate(-50%,-50%);width:clamp(44px,8%,90px);aspect-ratio:1;border-radius:50%;border:0;background:radial-gradient(circle,rgba(255,225,140,.42),rgba(217,179,91,.18) 45%,rgba(217,179,91,0) 70%);cursor:pointer;display:grid;place-items:center;padding:0;transition:transform .2s cubic-bezier(.34,1.56,.64,1),filter .2s}
+.hot::after,.hot::before{content:"";position:absolute;inset:18%;border-radius:50%;border:2px solid var(--gold);animation:ring 2.2s ease-out infinite}
+.hot::before{animation-delay:1.1s;border-width:1px}
+.hot img{width:60%;height:auto;filter:drop-shadow(0 0 1.5px rgba(20,10,0,.95)) drop-shadow(0 4px 6px rgba(0,0,0,.7));animation:bob 2.2s ease-in-out infinite;transition:filter .2s}
+.hot:hover,.hot:focus-visible{transform:translate(-50%,-50%) scale(1.14);background:radial-gradient(circle,rgba(255,235,170,.8),rgba(217,179,91,.35) 45%,rgba(217,179,91,0) 70%)}
+.hot:hover img,.hot:focus-visible img{animation:none;filter:drop-shadow(0 0 1.5px rgba(20,10,0,.95)) drop-shadow(0 6px 8px rgba(0,0,0,.7)) drop-shadow(0 0 12px rgba(255,235,170,1))}
+.hot:active{transform:translate(-50%,-50%) scale(.96);transition-duration:.06s}
+.hot.done,.hot.done img{animation:none}
+.hot.done{background:radial-gradient(circle,rgba(111,149,80,.4),rgba(111,149,80,0) 70%)}
+.hot.done::after,.hot.done::before{border-color:var(--moss);animation:none}
+.hot.done img{filter:drop-shadow(0 0 1.5px rgba(20,10,0,.95)) drop-shadow(0 4px 6px rgba(0,0,0,.7))}
 @keyframes ring{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.5);opacity:0}}
-@media (prefers-reduced-motion:reduce){.pawn::after,.hot::after{animation:none}}
+/* steady marker ring so a hotspot is visible even between ripples, with a dark edge for busy backgrounds */
+.hot{box-shadow:inset 0 0 0 2px rgba(255,235,170,.95),inset 0 0 0 3px rgba(40,25,5,.5),0 0 0 1px rgba(40,25,5,.35)}
+.hot.done{box-shadow:inset 0 0 0 2px var(--moss),0 0 0 1px rgba(0,0,0,.35)}
+.pawn::after,.hot::after,.hot::before{box-shadow:0 0 0 1px rgba(40,25,5,.45),inset 0 0 0 1px rgba(40,25,5,.45)}
 
-/* chips under the board */
-.chip{display:inline-flex;align-items:center;gap:7px;padding:6px 11px 6px 7px;border-radius:999px;border:1px solid var(--ink-3);background:var(--ink-2);color:var(--muted);font-size:14px;cursor:pointer;line-height:1.2}
-.chip b{font-family:var(--display);font-size:12px;width:20px;height:20px;border-radius:50%;display:inline-grid;place-items:center;border:1px solid var(--muted);color:var(--fg)}
-.chip.done{color:var(--fg);border-color:color-mix(in srgb,var(--moss) 60%,var(--ink-3))}
-.chip.done b{background:var(--moss);border-color:var(--moss);color:#0f1a12}
+/* flat controls: lift on hover, squash on press */
+:where(.btn,.done-toggle,.back,.lock .try,.lock .pick .word,.panel .x,.dot,.riddle .hint button){transition:transform .15s ease,box-shadow .15s ease,filter .15s ease,background-color .15s,border-color .15s,color .15s}
+:where(.btn,.done-toggle,.lock .try,.lock .pick .word,.panel .x):hover{transform:translateY(-1px)}
+:where(.btn,.done-toggle,.back,.lock .try,.lock .pick .word,.panel .x,.dot,.riddle .hint button):active{transform:translateY(1px) scale(.97);transition-duration:.05s}
+.btn:not(:disabled):hover{box-shadow:0 6px 18px rgba(217,179,91,.35),0 2px 4px rgba(0,0,0,.4)}
+.btn.ghost:hover{background:rgba(217,179,91,.12)}
+.btn:disabled,.btn.locked{transform:none;box-shadow:none}
+.done-toggle:hover{color:var(--fg);border-color:var(--gold-2);background:color-mix(in srgb,var(--gold) 10%,var(--ink-2))}
+.back:hover{color:var(--fg)}
+.lock .try:hover{filter:brightness(1.08);box-shadow:0 4px 12px rgba(156,122,42,.35)}
+.panel .x:hover{color:var(--paper-ink);border-color:var(--gold-2)}
+.dot:hover{transform:scale(1.4)}
+@media (prefers-reduced-motion:reduce){.pawn,.pawn::after,.pawn img,.hot,.hot::after,.hot::before,.hot img{animation:none}}
+
 .count{font-family:var(--display);font-weight:700;font-size:14px;color:var(--gold);letter-spacing:.04em;white-space:nowrap}
 
 /* buttons */
@@ -203,13 +235,15 @@ button{font:inherit;color:inherit}
 .riddle .hint button{background:none;border:0;padding:0;text-decoration:underline;color:inherit;cursor:pointer;font:inherit}
 .riddle.wrong input{border-color:var(--rose);animation:shake .3s}
 .reveal{display:grid;gap:12px;justify-items:start}
+.reveal .map{display:block;justify-self:center;max-width:100%;border-radius:10px;overflow:hidden;border:2px solid var(--parchment-2);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.reveal .map img{display:block;width:auto;max-width:100%;height:auto;max-height:min(60dvh,720px);aspect-ratio:4/3}
 </style>
 
 <main class="stage">
 
 <!-- 1 cover -->
 <section class="view hero gutter" data-view="uvod" data-ch="1">
-  <div class="scene"><img class="bg" src="img/01-cover.jpg" alt="Barča a Filip Danielkovi v kouzelném lese, v dálce hrad" fetchpriority="high"></div>
+  <div class="scene"><img class="bg" src="img/01-cover.png" alt="Barča a Filip Danielkovi v kouzelném lese, v dálce hrad" fetchpriority="high"></div>
   <div class="hero-text">
     <h1>Barča &amp; Filip Danielkovi</h1>
     <p>Společná cesta za manželským pokladem</p>
@@ -220,8 +254,8 @@ button{font:inherit;color:inherit}
 <!-- 2 intro -->
 <section class="view story gutter" data-view="pribeh" data-ch="1">
   <div class="view-head"><div class="kicker">Kapitola 1</div><h2>Příprava na společnou cestu za manželským pokladem</h2></div>
-  <div class="scene" style="--focus:22% 55%">
-    <img class="bg" src="img/02-intro.jpg" alt="Sova s kouzelnou holí sedí na truhle před lesní bránou, v pozadí hrad">
+  <div class="scene" style="--focus:48% 55%">
+    <img class="bg" src="img/02-intro.png" alt="Sova s kouzelnou holí sedí na truhle před lesní bránou, v pozadí hrad">
     <div class="speech pos-intro"><div class="in">
       <p><strong>Milí novomanželé Danielkovi,</strong> přece jste si nemysleli, že svatební dar dostanete jen tak!</p>
       <p>Kdepak! Každý pořádný poklad si zaslouží trochu úsilí. Čekají vás společné úkoly, které prověří vaše znalosti a schopnosti potřebné pro spokojené manželství. Jejich splněním se budete postupně přibližovat k vytoužené odměně.</p>
@@ -236,7 +270,7 @@ button{font:inherit;color:inherit}
 <section class="view gutter" data-view="les" data-ch="2">
   <div class="view-head"><div class="kicker">Kapitola 2</div><h2>Společná cesta za manželským pokladem</h2></div>
   <div class="scene">
-    <img class="bg" src="img/03-board.jpg" alt="Herní plán: cesta lesem od startu k hradu se šesti figurkami">
+    <img class="bg" src="img/03-board.png" alt="Herní plán: cesta lesem od startu k hradu se šesti figurkami">
     <div id="pawns"></div>
   </div>
   <div class="below" id="chips"></div>
@@ -247,7 +281,7 @@ button{font:inherit;color:inherit}
 <section class="view story gutter" data-view="brana" data-ch="3">
   <div class="view-head"><div class="kicker">Kapitola 3</div><h2>Brána hradu</h2></div>
   <div class="scene">
-    <img class="bg" src="img/04-gate-owl.jpg" alt="Sova před zamčenou mříží hradní brány">
+    <img class="bg" src="img/04-gate-owl.png" alt="Sova před zamčenou mříží hradní brány">
     <div class="speech pos-gate"><div class="in">
       <p><strong>Gratuluji!</strong> Úspěšně jste se dostali z kouzelného lesa ven a nacházíte se u brány hradu, která je ale zamčená. Naštěstí jste si z předchozích úkolů odnesli šest klíčových slov pro šťastné manželství, která vám teď přijdou vhod. Na dalším kroku najdete bránu a klíč, který vás zavede k šesti zámkům.</p>
     </div></div>
@@ -259,8 +293,8 @@ button{font:inherit;color:inherit}
 <section class="view gutter" data-view="zamky" data-ch="3">
   <div class="view-head"><div class="kicker">Kapitola 3</div><h2>Šest zámků, šest klíčových slov</h2></div>
   <div class="scene">
-    <img class="bg" src="img/05-gate.jpg" alt="Barča a Filip stojí před mříží hradní brány s visacím zámkem">
-    <button type="button" class="hot" id="hotLocks" style="left:51.8%;top:51.5%" data-open="locks" aria-label="Otevřít šest zámků brány"><img src="img/key.png" alt=""></button>
+    <img class="bg" src="img/05-gate.png" alt="Barča a Filip stojí před mříží hradní brány s visacím zámkem">
+    <span role="button" tabindex="0" class="hot" id="hotLocks" style="left:48.8%;top:50%" data-open="locks" aria-label="Otevřít šest zámků brány"><img src="img/key.png" alt=""></span>
   </div>
   <div class="below">
     <span class="count" id="lockCount">0 / 6 zámků</span>
@@ -273,7 +307,7 @@ button{font:inherit;color:inherit}
 <section class="view story gutter" data-view="nadvori" data-ch="4">
   <div class="view-head"><div class="kicker">Kapitola 4</div><h2>Nádvoří hradu</h2></div>
   <div class="scene" style="--focus:62% 55%">
-    <img class="bg" src="img/06-courtyard-owl.jpg" alt="Sova na podstavci uprostřed hradního nádvoří před zamčenými dveřmi">
+    <img class="bg" src="img/06-courtyard-owl.png" alt="Sova na podstavci uprostřed hradního nádvoří před zamčenými dveřmi">
     <div class="speech pos-court"><div class="in">
       <p><strong>Gratuluji!</strong> Úspěšně jste se dostali na nádvoří hradu. Dveře do hradu jsou ale zamčené. Na dveřích visí kouzelný klíč, který vám odemkne novomanželský kvíz. U každé otázky se společně domluvte, kdo z vás dvou se k ní hodí víc. Pozor, tentokrát nejde o rychlost ani o správné odpovědi. Je to jen chvilka pro vás dva, abyste se pobavili, zavzpomínali a třeba se o sobě dozvěděli něco nového.</p>
     </div></div>
@@ -285,7 +319,7 @@ button{font:inherit;color:inherit}
 <section class="view gutter" data-view="kviz" data-ch="4">
   <div class="view-head"><div class="kicker">Kapitola 4</div><h2>Novomanželský kvíz: nevěsta, nebo ženich?</h2></div>
   <div class="scene">
-    <img class="bg" src="img/07-courtyard.jpg" alt="Barča a Filip na nádvoří před zamčenými dveřmi hradu">
+    <img class="bg" src="img/07-courtyard.png" alt="Barča a Filip na nádvoří před zamčenými dveřmi hradu">
     <a class="hot" id="hotQuiz" style="left:48.2%;top:52.6%" href="https://app.faabul.com/l/Cf7S8OQfOkNF7B?lang=cs" target="_blank" rel="noopener" aria-label="Spustit novomanželský kvíz" data-quiz><img src="img/key.png" alt=""></a>
   </div>
   <div class="below">
@@ -299,7 +333,7 @@ button{font:inherit;color:inherit}
 <section class="view story gutter" data-view="sin" data-ch="5">
   <div class="view-head"><div class="kicker">Kapitola 5</div><h2>Truhla s mapou</h2></div>
   <div class="scene">
-    <img class="bg" src="img/08-hall-owl.jpg" alt="Sova v hradní síni, kolem truhly a mapy">
+    <img class="bg" src="img/08-hall-owl.png" alt="Sova v hradní síni, kolem truhly a mapy">
     <div class="speech pos-hall"><div class="in">
       <p>Vyplněním novomanželského kvízu a shodnutím se na odpovědích jste odemkli dveře do hradu. Uvnitř hradu na vás čeká truhla, ve které se ukrývá mapa vedoucí k vašemu novomanželskému pokladu.</p>
       <p>Doufám, že jste se při plnění úkolů pobavili, zamysleli se nad manželstvím a připomněli si, že největší síla spočívá v tom, když táhnete za jeden provaz. Tak vzhůru za pokladem! To nejcennější vás teprve čeká!</p>
@@ -312,12 +346,11 @@ button{font:inherit;color:inherit}
 <section class="view gutter" data-view="truhla" data-ch="5">
   <div class="view-head"><div class="kicker">Kapitola 5</div><h2>Poslední tajemství šťastného manželství</h2></div>
   <div class="scene">
-    <img class="bg" src="img/09-hall.jpg" alt="Barča a Filip v hradní síni u zamčené truhly s mapou">
-    <button type="button" class="hot" id="hotChest" style="left:51.1%;top:58.5%;width:clamp(56px,10%,120px)" data-open="riddle" aria-label="Otevřít zámek truhly"><img src="img/lock-key.png" alt="" style="width:70%"></button>
+    <img class="bg" src="img/09-hall.png" alt="Barča a Filip v hradní síni u zamčené truhly s mapou">
+    <span role="button" tabindex="0" class="hot" id="hotChest" style="left:51.8%;top:54%;width:clamp(56px,10%,120px)" data-open="riddle" aria-label="Otevřít zámek truhly"><img src="img/lock-key.png" alt="" style="width:70%"></span>
   </div>
   <div class="below">
     <button type="button" class="btn big" data-open="riddle" id="chestBtn">Otevřít truhlu</button>
-    <a class="btn big" id="mapBtn" href="https://canva.link/qnta2kwx0wdqrpl" target="_blank" rel="noopener" hidden>Otevřít mapu k pokladu <svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
   </div>
   <div class="below"><button type="button" class="back" data-back>‹ zpět</button></div>
 </section>
@@ -380,7 +413,7 @@ button{font:inherit;color:inherit}
   </form>
   <div class="reveal" id="reveal" hidden>
     <p><strong>Truhla je otevřená!</strong> Uvnitř leží mapa k vašemu novomanželskému pokladu. Tak vzhůru za ním, to nejcennější vás teprve čeká!</p>
-    <a class="btn big" href="https://canva.link/qnta2kwx0wdqrpl" target="_blank" rel="noopener">Otevřít mapu k pokladu <svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+    <a class="map" href="img/10-map.png" target="_blank" rel="noopener" aria-label="Otevřít mapu v plné velikosti"><img src="img/10-map.png" alt="Mapa k pokladu: náš král sedí ve své královské komnatě, tedy v ředitelně. Kdo jiný by váš novomanželský poklad mohl skrývat?" loading="lazy"></a>
   </div>
 </div></div>
 
@@ -388,12 +421,12 @@ button{font:inherit;color:inherit}
 const VIEWS=['uvod','pribeh','les','brana','zamky','nadvori','kviz','sin','truhla'];
 // Tasks in path order along the board (start pawn → castle). Hotspot positions are % of the board image.
 const TASKS = [
-  {id:'pfg1sj9da26', n:1, title:'Recept na šťastné manželství', who:'oba',   kind:'Roztřiďte ingredience: do polévky šťastného manželství, nebo do koše.', pawn:'coral', x:26.0, y:82.6, h:'84913220-e684e7e'},
-  {id:'pjro3yr4c26', n:2, title:'Slovník manželky',             who:'filip', kind:'Přelož deset výroků manželky do řeči obyčejných smrtelníků.',          pawn:'green', x:35.3, y:71.7, h:'36b2c7ec-ba846a6'},
-  {id:'pqff5rwk526', n:3, title:'Slovník manžela',              who:'barca', kind:'Přelož deset výroků manžela do řeči obyčejných smrtelníků.',           pawn:'pink',  x:55.0, y:73.6, h:'f9aa880c-ca7f0dd6'},
-  {id:'pdc39j1jk26', n:4, title:'Manželství v praxi',           who:'filip', kind:'Devět situací ze společného života, vyber nejlepší reakci.',          pawn:'navy',  x:60.5, y:63.1, h:'e6c65d66-8cb8534c'},
-  {id:'pz27t7ee326', n:5, title:'Manželství v praxi',           who:'barca', kind:'Devět situací ze společného života, vyber nejlepší reakci.',          pawn:'teal',  x:61.7, y:50.0, h:'3f27db23-4e86eaf7'},
-  {id:'pf9pocd5a26', n:6, title:'Manželské přešlapy',           who:'oba',   kind:'Pexeso: ke každému manželskému přešlapu najděte jeho řešení.',        pawn:'blue',  x:51.6, y:45.1, h:'a904dc41-44e5e5b1'},
+  {id:'pfg1sj9da26', n:1, title:'Recept na šťastné manželství', who:'oba',   kind:'Roztřiďte ingredience: do polévky šťastného manželství, nebo do koše.', pawn:'coral', x:25.9, y:86.0, h:'84913220-e684e7e'},
+  {id:'pjro3yr4c26', n:2, title:'Slovník manželky',             who:'filip', kind:'Přelož deset výroků manželky do řeči obyčejných smrtelníků.',          pawn:'green', x:33.4, y:72.5, h:'36b2c7ec-ba846a6'},
+  {id:'pqff5rwk526', n:3, title:'Slovník manžela',              who:'barca', kind:'Přelož deset výroků manžela do řeči obyčejných smrtelníků.',           pawn:'pink',  x:55.8, y:77.0, h:'f9aa880c-ca7f0dd6'},
+  {id:'pdc39j1jk26', n:4, title:'Manželství v praxi',           who:'filip', kind:'Devět situací ze společného života, vyber nejlepší reakci.',          pawn:'navy',  x:62.0, y:65.0, h:'e6c65d66-8cb8534c'},
+  {id:'pz27t7ee326', n:5, title:'Manželství v praxi',           who:'barca', kind:'Devět situací ze společného života, vyber nejlepší reakci.',          pawn:'teal',  x:61.6, y:51.5, h:'3f27db23-4e86eaf7'},
+  {id:'pf9pocd5a26', n:6, title:'Manželské přešlapy',           who:'oba',   kind:'Pexeso: ke každému manželskému přešlapu najděte jeho řešení.',        pawn:'blue',  x:49.6, y:45.5, h:'a904dc41-44e5e5b1'},
 ];
 const WHO = {oba:'Pro oba', filip:'Jen pro Filipa', barca:'Jen pro Barču'};
 // Six locks of the castle gate (clue → one of the six keywords); answers are stored as hashes.
@@ -454,6 +487,7 @@ function go(v){
   refresh();
   fitSpeech();
 }
+document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ') && e.target.matches && e.target.matches('[role=button]')){ e.preventDefault(); e.target.click(); } });
 document.addEventListener('click',e=>{
   const g=e.target.closest('[data-go]'); if(g){ e.preventDefault(); go(g.dataset.go); }
   const c=e.target.closest('[data-close]'); if(c){ closeOverlays(); }
@@ -486,20 +520,15 @@ document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{
 // ---------- forest: pawns, chips, task panel ----------
 let curTask=null;
 TASKS.forEach(t=>{
-  const b=document.createElement('button');
-  b.type='button'; b.className='pawn'; b.id='pawn-'+t.id;
+  const b=document.createElement('span');
+  b.setAttribute('role','button'); b.tabIndex=0; b.className='pawn'; b.id='pawn-'+t.id;
   b.style.left=t.x+'%'; b.style.top=t.y+'%';
   b.setAttribute('aria-label',`Úkol ${t.n}: ${t.title}`);
   b.innerHTML=`<span class="n">${t.n}</span><img src="img/pawn-${t.pawn}.png" alt="">`;
   b.addEventListener('click',()=>openTask(t));
   $('pawns').appendChild(b);
-  const c=document.createElement('button');
-  c.type='button'; c.className='chip'; c.id='chip-'+t.id;
-  c.innerHTML=`<b>${t.n}</b><span>${esc(t.title)}</span>`;
-  c.addEventListener('click',()=>openTask(t));
-  $('chips').appendChild(c);
 });
-const cnt=document.createElement('span'); cnt.className='count'; cnt.id='kwCount'; $('chips').prepend(cnt);
+const cnt=document.createElement('span'); cnt.className='count'; cnt.id='kwCount'; $('chips').append(cnt);
 function openTask(t){
   curTask=t;
   $('taskKicker').innerHTML=`Úkol ${t.n} z 6 · <span class="who who-${t.who}">${WHO[t.who]}</span>`;
@@ -569,7 +598,7 @@ function refresh(){
   // forest
   const n=TASKS.filter(taskOk).length;
   $('kwCount').textContent=`${n} / ${TASKS.length} klíčových slov`;
-  TASKS.forEach(t=>{ const ok=taskOk(t); $('pawn-'+t.id).classList.toggle('done',ok); $('chip-'+t.id).classList.toggle('done',ok); });
+  TASKS.forEach(t=>{ const ok=taskOk(t); $('pawn-'+t.id).classList.toggle('done',ok); });
   // gate
   const words=TASKS.map(t=>taskOk(t)?kwOf(t):'');
   // words already used to open a lock disappear from the other locks' pickers
@@ -590,7 +619,7 @@ function refresh(){
   $('hotQuiz').classList.toggle('done',!!state.done.kviz);
   // chest
   const solved=viewDone('truhla');
-  $('riddle').hidden=solved; $('reveal').hidden=!solved; $('mapBtn').hidden=!solved; $('chestBtn').hidden=solved; $('hotChest').classList.toggle('done',solved);
+  $('riddle').hidden=solved; $('reveal').hidden=!solved; document.querySelector('#ovRiddle .panel').classList.toggle('wide',solved); $('chestBtn').hidden=solved; $('hotChest').classList.toggle('done',solved);
   // continue button of the current screen dims until its task is complete
   const b=blocker(cur);
   document.querySelectorAll('.view.on [data-next]').forEach(el=>el.classList.toggle('locked',!!b));

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Responsive parchment scroll boxes</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; padding: 3rem 1.25rem; background: #17332c; font: 17px/1.6 Georgia, serif; color: #4f3b22; }
+.page { display: grid; justify-items: center; gap: 2rem; }
+/* Nine-slice border: corners stay untouched, horizontal and vertical sides stretch.
+   CSS border dimensions correspond to image-slice dimensions at the default scale. */
+.scroll {
+  --scroll-border-x: 90px;
+  --scroll-border-y: 76px;
+  width: min(100%, 760px);
+  border-style: solid;
+  border-width: var(--scroll-border-y) var(--scroll-border-x);
+  border-image-source: url('scroll-full.png');
+  border-image-slice: 225 265 225 265 fill;
+  border-image-width: 1;
+  border-image-repeat: stretch;
+  /* content area has no fixed height */
+  min-height: 220px;
+}
+.scroll__content { margin: -15px -32px; position: relative; }
+.scroll h2 { text-align: center; margin: 0 0 0.75rem; line-height: 1.2; }
+.scroll p { margin: 0 0 .85rem; }
+.scroll p:last-child { margin-bottom: 0; }
+.scroll--small { width: min(100%, 480px); }
+@media (max-width: 540px) {
+  .scroll { --scroll-border-x: 54px; --scroll-border-y: 56px; }
+  .scroll__content { margin: -10px -17px; }
+  body { padding: 1.5rem .5rem; }
+}
+</style>
+<main class="page">
+ <section class="scroll scroll--small"><div class="scroll__content"><h2>Short message</h2><p>A parchment box that resizes with its contents.</p></div></section>
+ <section class="scroll"><div class="scroll__content"><h2>A longer story</h2><p>This frame uses the same decorative image at every size. The four corners are preserved, while the top, bottom, left and right edges are resized independently.</p><p>Put as many paragraphs here as you need. The parchment automatically grows to fit the content, with no JavaScript required.</p><p>Adjust the CSS variables to change the border thickness.</p></div></section>
+</main></html>
